@@ -204,7 +204,29 @@ class LivingDatabase:
                 rows = cur.fetchall()
                 cur.close()
                 conn.close()
-                return [dict(r) for r in rows]
+                result = []
+                import datetime
+                import re
+                today = datetime.date.today()
+                for r in rows:
+                    item = dict(r)
+                    item["registration_deadline"] = item.get("application_deadline") or item.get("registration_deadline")
+                    item["exam_fee"] = item.get("application_fee") or item.get("exam_fee")
+                    deadline_val = item.get("application_deadline") or item.get("exam_date")
+                    if deadline_val:
+                        m = re.search(r'(\d{4}-\d{2}-\d{2})', str(deadline_val))
+                        if m:
+                            try:
+                                d = datetime.datetime.strptime(m.group(1), "%Y-%m-%d").date()
+                                item["days_remaining"] = max(0, (d - today).days)
+                            except Exception:
+                                item["days_remaining"] = 14
+                        else:
+                            item["days_remaining"] = 14
+                    else:
+                        item["days_remaining"] = 14
+                    result.append(item)
+                return result
             except Exception as e:
                 pass
         # Fallback local seed

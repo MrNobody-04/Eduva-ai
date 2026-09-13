@@ -21,7 +21,7 @@ export default function Navbar({
     { id: 'universities', label: 'Universities' },
     { id: 'courses', label: 'Degrees' },
     { id: 'entrance', label: 'Entrance' },
-    { id: 'compare', label: 'Compare' },
+    { id: 'loksewa', label: 'Loksewa' },
     { id: 'alerts', label: 'Alerts' },
     { id: 'applications', label: 'Tracker' },
     { id: 'saved', label: 'Saved' }

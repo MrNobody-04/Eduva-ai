@@ -179,6 +179,152 @@ ALL_NEPAL_COLLEGES = [
         ],
         "admission_criteria": "AFU All Nepal Agriculture Entrance Examination.",
         "scholarships": "Top 20 Merit Rankers receive 100% Free Tuition + Free Campus Hostel."
+    },
+    {
+        "id": "col_st_xaviers",
+        "name": "St. Xavier's College",
+        "university": "Tribhuvan University (TU)",
+        "type": "Private Affiliated (Autonomous Spirit)",
+        "location": "Maitighar, Kathmandu",
+        "established": 1988,
+        "rating": 4.9,
+        "image_url": "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=800&auto=format&fit=crop&q=80",
+        "description": "Prestigious Jesuit institution in Maitighar known for high academic discipline, research symposiums, and top B.Sc. CSIT merit ranks.",
+        "courses": [
+            {"name": "B.Sc. Computer Science and Information Technology (CSIT)", "duration": "4 Years", "regular_seats": 0, "full_fee_seats": 72, "regular_fee": "-", "full_fee": "NPR 520,000"},
+            {"name": "B.Sc. Physics / Microbiology", "duration": "4 Years", "regular_seats": 0, "full_fee_seats": 96, "regular_fee": "-", "full_fee": "NPR 380,000"},
+            {"name": "Bachelor of Social Work (BSW)", "duration": "4 Years", "regular_seats": 0, "full_fee_seats": 48, "regular_fee": "-", "full_fee": "NPR 340,000"}
+        ],
+        "admission_criteria": "TU IOST CSIT Central Entrance Examination score + St. Xavier's Aptitude Interview.",
+        "scholarships": "Jesuit Need-Based Financial Aid + TU 10% Free Quota."
+    },
+    {
+        "id": "col_prime",
+        "name": "Prime College",
+        "university": "Tribhuvan University (TU)",
+        "type": "Private Affiliated",
+        "location": "Khusibu, Naya Bazaar, Kathmandu",
+        "established": 2001,
+        "rating": 4.7,
+        "image_url": "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800&auto=format&fit=crop&q=80",
+        "description": "Pioneering IT and management college in Kathmandu valley featuring dedicated Incubation Lab, AWS Academy accreditation, and robotics club.",
+        "courses": [
+            {"name": "B.Sc. CSIT", "duration": "4 Years", "regular_seats": 0, "full_fee_seats": 72, "regular_fee": "-", "full_fee": "NPR 580,000"},
+            {"name": "BCA (Bachelor in Computer Application)", "duration": "4 Years", "regular_seats": 0, "full_fee_seats": 70, "regular_fee": "-", "full_fee": "NPR 490,000"},
+            {"name": "BBA (Bachelor of Business Administration)", "duration": "4 Years", "regular_seats": 0, "full_fee_seats": 64, "regular_fee": "-", "full_fee": "NPR 520,000"},
+            {"name": "BBM (Bachelor of Business Management)", "duration": "4 Years", "regular_seats": 0, "full_fee_seats": 64, "regular_fee": "-", "full_fee": "NPR 480,000"}
+        ],
+        "admission_criteria": "TU IOST (CSIT) / FOHSS (BCA) / FOM (CMAT) entrance scores.",
+        "scholarships": "Prime Merit Scholarship for entrance top 100 rankers + Semester Topper awards."
+    },
+    {
+        "id": "col_padmashree",
+        "name": "Padmashree International College",
+        "university": "Tribhuvan University (TU) & International Affiliations",
+        "type": "Private Affiliated",
+        "location": "Tinkune / Aloknagar, Kathmandu",
+        "established": 2007,
+        "rating": 4.6,
+        "image_url": "https://images.unsplash.com/photo-1562774053-701939374585?w=800&auto=format&fit=crop&q=80",
+        "description": "Renowned higher education hub in Tinkune offering IT, Food Technology, and Hospitality programs with hands-on industrial labs and global credit transfers.",
+        "courses": [
+            {"name": "B.Sc. CSIT", "duration": "4 Years", "regular_seats": 0, "full_fee_seats": 48, "regular_fee": "-", "full_fee": "NPR 540,000"},
+            {"name": "BCA (Bachelor in Computer Application)", "duration": "4 Years", "regular_seats": 0, "full_fee_seats": 60, "regular_fee": "-", "full_fee": "NPR 460,000"},
+            {"name": "B.Tech Food Technology", "duration": "4 Years", "regular_seats": 0, "full_fee_seats": 36, "regular_fee": "-", "full_fee": "NPR 490,000"},
+            {"name": "BIT (Hons) - Nilai University Affiliated", "duration": "4 Years", "regular_seats": 0, "full_fee_seats": 60, "regular_fee": "-", "full_fee": "NPR 650,000"}
+        ],
+        "admission_criteria": "IOST Entrance / FOHSS BCA test + College Personal Counseling.",
+        "scholarships": "Founder Scholarships + MOEST Approved Quota discounts."
+    },
+    {
+        "id": "col_kathford",
+        "name": "Kathford International College of Engineering and Management",
+        "university": "Tribhuvan University (TU)",
+        "type": "Private Affiliated",
+        "location": "Balkumari, Lalitpur",
+        "established": 2003,
+        "rating": 4.6,
+        "image_url": "https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800&auto=format&fit=crop&q=80",
+        "description": "Comprehensive engineering and technology campus situated at Balkumari Ring Road with strong placement partnerships and tech incubators.",
+        "courses": [
+            {"name": "B.E. Computer Engineering", "duration": "4 Years", "regular_seats": 0, "full_fee_seats": 48, "regular_fee": "-", "full_fee": "NPR 750,000"},
+            {"name": "B.E. Civil Engineering", "duration": "4 Years", "regular_seats": 0, "full_fee_seats": 96, "regular_fee": "-", "full_fee": "NPR 710,000"},
+            {"name": "B.Sc. CSIT", "duration": "4 Years", "regular_seats": 0, "full_fee_seats": 48, "regular_fee": "-", "full_fee": "NPR 570,000"},
+            {"name": "BCA", "duration": "4 Years", "regular_seats": 0, "full_fee_seats": 35, "regular_fee": "-", "full_fee": "NPR 460,000"}
+        ],
+        "admission_criteria": "IOE / IOST / FOHSS entrance qualifications.",
+        "scholarships": "Kathford Academic Excellence Fund + IOE 10% Reserved Quota."
+    },
+    {
+        "id": "col_dwit",
+        "name": "Deerwalk Institute of Technology (DWIT)",
+        "university": "Tribhuvan University (TU)",
+        "type": "Private Affiliated",
+        "location": "Sifal, Kathmandu",
+        "established": 2010,
+        "rating": 4.8,
+        "image_url": "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80",
+        "description": "Industry-driven technology institute in Sifal affiliated with TU, backed by Deerwalk Inc. offering guaranteed enterprise software internships and modern campus life.",
+        "courses": [
+            {"name": "B.Sc. CSIT", "duration": "4 Years", "regular_seats": 0, "full_fee_seats": 72, "regular_fee": "-", "full_fee": "NPR 790,000"},
+            {"name": "BCA", "duration": "4 Years", "regular_seats": 0, "full_fee_seats": 40, "regular_fee": "-", "full_fee": "NPR 680,000"}
+        ],
+        "admission_criteria": "TU IOST / FOHSS entrance + Deerwalk Technical Aptitude & Interview.",
+        "scholarships": "Merit scholarships for top 10% entrance rankers."
+    },
+    {
+        "id": "col_apex",
+        "name": "Apex College",
+        "university": "Pokhara University (PU)",
+        "type": "Private Affiliated",
+        "location": "Mid-Baneshwor, Kathmandu",
+        "established": 2000,
+        "rating": 4.7,
+        "image_url": "https://images.unsplash.com/photo-1525921429624-479b6a26d84d?w=800&auto=format&fit=crop&q=80",
+        "description": "Top-tier business and IT college affiliated to Pokhara University, celebrated for corporate placements, case-study pedagogy, and active entrepreneurship clubs.",
+        "courses": [
+            {"name": "BBA (Bachelor of Business Administration)", "duration": "4 Years", "regular_seats": 0, "full_fee_seats": 120, "regular_fee": "-", "full_fee": "NPR 580,000"},
+            {"name": "BCIS (Computer Information Systems)", "duration": "4 Years", "regular_seats": 0, "full_fee_seats": 48, "regular_fee": "-", "full_fee": "NPR 540,000"},
+            {"name": "BBA-BI (Banking and Insurance)", "duration": "4 Years", "regular_seats": 0, "full_fee_seats": 48, "regular_fee": "-", "full_fee": "NPR 560,000"}
+        ],
+        "admission_criteria": "Pokhara University Entrance Exam + Apex Aptitude Interview.",
+        "scholarships": "PU 10% Open Quota + Apex Merit Waiver based on +2 CGPA."
+    },
+    {
+        "id": "col_lacm",
+        "name": "Little Angels' College of Management (LACM)",
+        "university": "Kathmandu University (KU)",
+        "type": "Private Affiliated",
+        "location": "Hattiban, Lalitpur",
+        "established": 1999,
+        "rating": 4.7,
+        "image_url": "https://images.unsplash.com/photo-1509062522246-3755977927d7?w=800&auto=format&fit=crop&q=80",
+        "description": "Premier Kathmandu University affiliated college in Hattiban offering BBA, BBIS, and BHM on a sprawling 350-roopani serene modern campus.",
+        "courses": [
+            {"name": "BBIS (Bachelor of Business Information Systems)", "duration": "4 Years", "regular_seats": 0, "full_fee_seats": 40, "regular_fee": "-", "full_fee": "NPR 640,000"},
+            {"name": "BBA", "duration": "4 Years", "regular_seats": 0, "full_fee_seats": 80, "regular_fee": "-", "full_fee": "NPR 620,000"},
+            {"name": "BHM (Hotel Management)", "duration": "4 Years", "regular_seats": 0, "full_fee_seats": 40, "regular_fee": "-", "full_fee": "NPR 680,000"}
+        ],
+        "admission_criteria": "KUMAT (KU Management Admission Test) score + Interview.",
+        "scholarships": "KU Founder Scholarships + LA Trust Merit Waivers."
+    },
+    {
+        "id": "col_kantipur_eng",
+        "name": "Kantipur Engineering College (KEC)",
+        "university": "Tribhuvan University (TU)",
+        "type": "Private Affiliated",
+        "location": "Dhapakhel, Lalitpur",
+        "established": 1998,
+        "rating": 4.6,
+        "image_url": "https://images.unsplash.com/photo-1562774053-701939374585?w=800&auto=format&fit=crop&q=80",
+        "description": "Extensive engineering campus in Dhapakhel Lalitpur with specialized hardware laboratories, high university graduation pass rates, and research journals.",
+        "courses": [
+            {"name": "B.E. Computer Engineering", "duration": "4 Years", "regular_seats": 0, "full_fee_seats": 96, "regular_fee": "-", "full_fee": "NPR 760,000"},
+            {"name": "B.E. Civil Engineering", "duration": "4 Years", "regular_seats": 0, "full_fee_seats": 144, "regular_fee": "-", "full_fee": "NPR 720,000"},
+            {"name": "B.E. Electrical Engineering", "duration": "4 Years", "regular_seats": 0, "full_fee_seats": 48, "regular_fee": "-", "full_fee": "NPR 670,000"}
+        ],
+        "admission_criteria": "IOE Computer-Based Entrance Examination qualification.",
+        "scholarships": "10% IOE Free Quota + College Founder Scholarships."
     }
 ]
 

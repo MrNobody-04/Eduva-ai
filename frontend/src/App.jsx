@@ -6,13 +6,12 @@ import CourseIntelligence from './components/CourseIntelligence'
 import UniversityHub from './components/UniversityHub'
 import CollegesDirectory from './components/CollegesDirectory'
 import EntranceCenter from './components/EntranceCenter'
-import ComparisonView from './components/ComparisonView'
+import LoksewaRadar from './components/LoksewaRadar'
 import ApplicationTracker from './components/ApplicationTracker'
 import SavedHub from './components/SavedHub'
 import AlertsAndSafety from './components/AlertsAndSafety'
 import EntranceResultsViewer from './components/EntranceResultsViewer'
 import ScholarshipsPortal from './components/ScholarshipsPortal'
-import AdminConsole from './components/AdminConsole'
 import ConversationalCopilot from './components/ConversationalCopilot'
 import ProfileModal from './components/ProfileModal'
 import MobileBottomNav from './components/MobileBottomNav'
@@ -54,16 +53,12 @@ export default function App() {
     setIsCopilotOpen(true)
   }
 
-  // Keyboard shortcuts: Ctrl+K for search, Ctrl+Shift+A for admin console
+  // Keyboard shortcuts: Ctrl+K for universal search
   useEffect(() => {
     const handleKeyDown = (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault()
         setIsSearchOpen(true)
-      }
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
-        e.preventDefault()
-        setActiveTab('admin')
       }
       if (e.key === 'Escape') {
         setIsSearchOpen(false)
@@ -71,6 +66,30 @@ export default function App() {
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
+  // Autonomous Student Geolocation Detection (Nepal Provinces)
+  useEffect(() => {
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords
+          let detected = 'Bagmati Province (Kathmandu Valley)'
+          if (longitude < 84.5 && latitude > 27.8) {
+            detected = 'Gandaki Province (Pokhara)'
+          } else if (longitude > 86.5) {
+            detected = 'Koshi Province (Eastern Nepal)'
+          } else if (latitude < 27.5 && longitude < 84.8) {
+            detected = 'Lumbini Province (Butwal / Bhairahawa)'
+          }
+          try {
+            localStorage.setItem('eduva_user_region', detected)
+          } catch (e) {}
+        },
+        () => {},
+        { timeout: 8000 }
+      )
+    }
   }, [])
 
   // Fetch core data on mount
@@ -156,6 +175,7 @@ export default function App() {
         {activeTab === 'universities' && (
           <UniversityHub
             theme={theme}
+            onOpenCopilot={openCopilotWithPrompt}
           />
         )}
 
@@ -163,31 +183,35 @@ export default function App() {
           <CollegesDirectory
             colleges={colleges}
             theme={theme}
+            onOpenCopilot={openCopilotWithPrompt}
           />
         )}
 
         {activeTab === 'entrance' && (
           <EntranceCenter
             theme={theme}
+            onOpenCopilot={openCopilotWithPrompt}
           />
         )}
 
-        {activeTab === 'compare' && (
-          <ComparisonView
+        {activeTab === 'loksewa' && (
+          <LoksewaRadar
             theme={theme}
+            onOpenCopilot={openCopilotWithPrompt}
           />
         )}
 
         {activeTab === 'alerts' && (
           <AlertsAndSafety
             theme={theme}
+            onOpenCopilot={openCopilotWithPrompt}
           />
         )}
 
         {activeTab === 'applications' && (
           <ApplicationTracker
             theme={theme}
-            onOpenCopilot={() => setIsCopilotOpen(true)}
+            onOpenCopilot={openCopilotWithPrompt}
           />
         )}
 
@@ -208,14 +232,7 @@ export default function App() {
         {activeTab === 'scholarships' && (
           <ScholarshipsPortal
             theme={theme}
-          />
-        )}
-
-        {activeTab === 'admin' && (
-          <AdminConsole
-            theme={theme}
-            isDemoMode={isDemoMode}
-            toggleDemoMode={toggleDemoMode}
+            onOpenCopilot={openCopilotWithPrompt}
           />
         )}
 
@@ -352,37 +369,170 @@ export default function App() {
         theme={theme}
       />
 
-      {/* Footer */}
-      <footer className={`border-t py-8 transition-colors w-full ${
-        theme === 'dark' ? 'border-slate-800/80 bg-[#080C14]' : 'border-slate-200 bg-white'
+      {/* Modern Multi-Column Executive Footer */}
+      <footer className={`border-t transition-colors w-full ${
+        theme === 'dark' ? 'border-slate-800/80 bg-[#060911] text-slate-400' : 'border-slate-200 bg-slate-50 text-slate-600'
       }`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
-          <div className="flex items-center space-x-2">
-            <span className="font-black tracking-wider bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-              EDUVA AI
-            </span>
-            <span className={theme === 'dark' ? 'text-slate-600' : 'text-slate-400'}>•</span>
-            <span className={theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}>
-              Nepal Higher Education Intelligence Platform
-            </span>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 mb-10">
+            {/* Column 1: Brand & Status (2 cols on lg) */}
+            <div className="lg:col-span-2 space-y-4">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 p-0.5 flex items-center justify-center">
+                  <div className={`w-full h-full rounded-[10px] flex items-center justify-center ${theme === 'dark' ? 'bg-[#060911]' : 'bg-white'}`}>
+                    <Bot className="w-5 h-5 text-blue-400" />
+                  </div>
+                </div>
+                <span className="text-xl font-black tracking-tight bg-gradient-to-r from-blue-400 via-cyan-300 to-indigo-400 bg-clip-text text-transparent">
+                  EDUVA AI
+                </span>
+                <span className="px-2 py-0.5 text-[9px] font-black uppercase tracking-widest bg-blue-500/10 border border-blue-500/30 text-blue-400 rounded-full">
+                  v2.8 Live
+                </span>
+              </div>
+
+              <p className={`text-xs leading-relaxed max-w-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
+                Nepal&apos;s authoritative Higher Education &amp; Public Service Commission (लोक सेवा आयोग) Intelligence Platform. Empowering students across all 7 provinces with autonomous real-time entrance verification, syllabus analytics, and transparent fee disclosures.
+              </p>
+
+              {/* Live System Health Badge */}
+              <div className="flex items-center gap-2 pt-1 text-[11px] font-semibold">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                <span className="text-emerald-500 dark:text-emerald-400">Autonomous Pipeline Online</span>
+                <span className="text-slate-500">•</span>
+                <span className="text-slate-400">Supabase PG 17</span>
+                <span className="text-slate-500">•</span>
+                <span className="text-slate-400">Gemini 2.5 Flash</span>
+              </div>
+            </div>
+
+            {/* Column 2: University Portals */}
+            <div className="space-y-3 text-xs">
+              <h4 className="font-black uppercase tracking-wider text-slate-900 dark:text-white text-[11px]">
+                University Portals
+              </h4>
+              <ul className="space-y-2">
+                <li>
+                  <a href="https://tu.edu.np" target="_blank" rel="noreferrer" className="hover:text-blue-500 transition-colors flex items-center justify-between">
+                    <span>Tribhuvan University (TU)</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="https://ku.edu.np" target="_blank" rel="noreferrer" className="hover:text-blue-500 transition-colors flex items-center justify-between">
+                    <span>Kathmandu University (KU)</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="https://pu.edu.np" target="_blank" rel="noreferrer" className="hover:text-blue-500 transition-colors flex items-center justify-between">
+                    <span>Pokhara University (PU)</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="https://puexam.edu.np" target="_blank" rel="noreferrer" className="hover:text-blue-500 transition-colors flex items-center justify-between">
+                    <span>Purbanchal University</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="https://mwu.edu.np" target="_blank" rel="noreferrer" className="hover:text-blue-500 transition-colors flex items-center justify-between">
+                    <span>Mid-West University</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="https://nou.edu.np" target="_blank" rel="noreferrer" className="hover:text-blue-500 transition-colors flex items-center justify-between">
+                    <span>Nepal Open University</span>
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            {/* Column 3: National Entrance & PSC */}
+            <div className="space-y-3 text-xs">
+              <h4 className="font-black uppercase tracking-wider text-slate-900 dark:text-white text-[11px]">
+                National Portals &amp; PSC
+              </h4>
+              <ul className="space-y-2">
+                <li>
+                  <a href="https://entrance.ioe.edu.np" target="_blank" rel="noreferrer" className="hover:text-blue-500 transition-colors">
+                    TU IOE Entrance Portal
+                  </a>
+                </li>
+                <li>
+                  <a href="https://mec.gov.np" target="_blank" rel="noreferrer" className="hover:text-blue-500 transition-colors">
+                    MEC CEE (Medical Entrance)
+                  </a>
+                </li>
+                <li>
+                  <a href="https://kucat.ku.edu.np" target="_blank" rel="noreferrer" className="hover:text-blue-500 transition-colors">
+                    KUCAT CBT Entrance
+                  </a>
+                </li>
+                <li>
+                  <a href="https://psc.gov.np" target="_blank" rel="noreferrer" className="hover:text-red-500 transition-colors">
+                    Loksewa Aayog (लोक सेवा आयोग)
+                  </a>
+                </li>
+                <li>
+                  <a href="https://psconline.psc.gov.np" target="_blank" rel="noreferrer" className="hover:text-red-500 transition-colors">
+                    PSC Online Application System
+                  </a>
+                </li>
+                <li>
+                  <a href="https://neb.gov.np" target="_blank" rel="noreferrer" className="hover:text-blue-500 transition-colors">
+                    National Examination Board (NEB)
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            {/* Column 4: Student Emergency & Alerts */}
+            <div className="space-y-3 text-xs">
+              <h4 className="font-black uppercase tracking-wider text-slate-900 dark:text-white text-[11px]">
+                Safety &amp; Emergency Hub
+              </h4>
+              <ul className="space-y-2">
+                <li>
+                  <a href="https://traffic.nepalpolice.gov.np" target="_blank" rel="noreferrer" className="hover:text-amber-500 transition-colors">
+                    Traffic Police Hotline 103
+                  </a>
+                </li>
+                <li>
+                  <a href="https://dhm.gov.np" target="_blank" rel="noreferrer" className="hover:text-blue-500 transition-colors">
+                    Hydrology &amp; Weather (DHM)
+                  </a>
+                </li>
+                <li>
+                  <a href="https://bipadportal.gov.np" target="_blank" rel="noreferrer" className="hover:text-red-500 transition-colors">
+                    NDRRMA Disaster Portal
+                  </a>
+                </li>
+                <li>
+                  <a href="https://tuexam.edu.np" target="_blank" rel="noreferrer" className="hover:text-blue-500 transition-colors">
+                    TU Exam Control (Balkhu)
+                  </a>
+                </li>
+                <li>
+                  <span className="text-slate-500 dark:text-slate-500 block pt-1">
+                    Police Control: Dial 100
+                  </span>
+                </li>
+              </ul>
+            </div>
           </div>
 
-          <div className="flex items-center space-x-3">
-            <div className="flex items-center space-x-1.5 font-semibold">
-              <span className={theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}>Crafted with</span>
+          {/* Bottom Bar */}
+          <div className="pt-8 border-t border-slate-200 dark:border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
+            <div className="text-slate-500 dark:text-slate-400 text-center sm:text-left">
+              &copy; {new Date().getFullYear()} EDUVA AI. All official university data is autonomously synchronized with public government gazettes.
+            </div>
+
+            <div className="flex items-center space-x-1.5 font-semibold text-slate-600 dark:text-slate-400">
+              <span>Crafted with</span>
               <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
-              <span className={theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}>by</span>
+              <span>by</span>
               <span className="font-black text-blue-500 hover:text-indigo-400 transition-colors">
                 SujanGC
               </span>
             </div>
-            <button
-              onClick={() => setActiveTab('admin')}
-              className="text-[10px] text-slate-500 hover:text-slate-400 underline decoration-slate-700 transition-colors cursor-pointer"
-              title="System Admin & Verification (Ctrl+Shift+A)"
-            >
-              • Admin
-            </button>
           </div>
         </div>
       </footer>

@@ -119,6 +119,17 @@ body {
   box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.4), 0 0 20px 2px rgba(59, 130, 246, 0.15);
 }
 
+.theme-light .card-3d:hover {
+  box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.1), 0 0 20px 2px rgba(59, 130, 246, 0.12);
+}
+
+/* Prevent mobile auto-zoom on input focus on iOS/Android */
+@media screen and (max-width: 640px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
 /* Glass Panels */
 .glass-panel {
   background: rgba(14, 20, 36, 0.75);
