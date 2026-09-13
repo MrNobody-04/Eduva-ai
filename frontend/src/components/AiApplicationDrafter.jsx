@@ -6,12 +6,26 @@ import {
 
 export default function AiApplicationDrafter({ theme }) {
   const [docType, setDocType] = useState('SOP')
-  const [studentName, setStudentName] = useState('Sujan Sharma')
-  const [gpa, setGpa] = useState('3.85 GPA (+2 Science)')
-  const [targetCollege, setTargetCollege] = useState('Pulchowk Campus (IOE TU)')
-  const [targetProgram, setTargetProgram] = useState('B.E. Computer Engineering')
-  const [careerGoals, setCareerGoals] = useState('advancing artificial intelligence, scalable distributed software, and sustainable tech infrastructure in Nepal')
-  const [financialNeed, setFinancialNeed] = useState('family annual income is below the institutional threshold to support full self-financed tuition')
+  const [studentName, setStudentName] = useState(() => {
+    try {
+      const p = JSON.parse(localStorage.getItem('eduva_user_profile') || '{}')
+      return p.name || ''
+    } catch (e) {
+      return ''
+    }
+  })
+  const [gpa, setGpa] = useState(() => {
+    try {
+      const p = JSON.parse(localStorage.getItem('eduva_user_profile') || '{}')
+      return p.gpa ? `${p.gpa} GPA` : ''
+    } catch (e) {
+      return ''
+    }
+  })
+  const [targetCollege, setTargetCollege] = useState('')
+  const [targetProgram, setTargetProgram] = useState('')
+  const [careerGoals, setCareerGoals] = useState('')
+  const [financialNeed, setFinancialNeed] = useState('')
   
   const [generatedDoc, setGeneratedDoc] = useState(null)
   const [isGenerating, setIsGenerating] = useState(false)

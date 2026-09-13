@@ -83,26 +83,28 @@ class GeminiService:
         
         full_prompt = "\n\n".join(prompt_parts)
 
-        attempts = len(self.keys)
+        models_to_try = [self.model_name, 'gemini-flash-latest', 'gemini-3.5-flash-lite']
+        attempts = len(self.keys) * len(models_to_try)
         last_error = None
 
-        for attempt in range(attempts):
-            try:
-                model = genai.GenerativeModel(
-                    model_name=self.model_name,
-                    system_instruction=sys_prompt
-                )
-                response = model.generate_content(full_prompt)
-                return {
-                    'success': True,
-                    'text': response.text,
-                    'key_used': f'KEY_{self.active_key_idx + 1}',
-                    'model': self.model_name
-                }
-            except Exception as e:
-                last_error = str(e)
-                logger.warning(f'Gemini call with Key #{self.active_key_idx + 1} failed: {e}. Attempting key rotation.')
-                self.rotate_key()
+        for m_name in models_to_try:
+            for k_idx in range(len(self.keys)):
+                try:
+                    model = genai.GenerativeModel(
+                        model_name=m_name,
+                        system_instruction=sys_prompt
+                    )
+                    response = model.generate_content(full_prompt)
+                    return {
+                        'success': True,
+                        'text': response.text,
+                        'key_used': f'KEY_{self.active_key_idx + 1}',
+                        'model': m_name
+                    }
+                except Exception as e:
+                    last_error = str(e)
+                    logger.warning(f'Gemini model {m_name} with Key #{self.active_key_idx + 1} failed: {e}. Attempting key rotation.')
+                    self.rotate_key()
 
         return {
             'success': False,

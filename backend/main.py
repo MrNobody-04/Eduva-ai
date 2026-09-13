@@ -352,19 +352,19 @@ async def get_user_profile(student_id: str = "std_sujan_01"):
     return global_db.get_profile(student_id)
 
 class UpdateProfileRequest(BaseModel):
-    name: Optional[str] = "Sujan Sharma"
+    name: Optional[str] = ""
     email: Optional[str] = ""
     education_level: Optional[str] = "+2"
     stream: Optional[str] = "Science"
-    gpa: Optional[float] = 3.85
+    gpa: Optional[float] = None
     graduation_year: Optional[int] = 2026
-    preferred_course: Optional[str] = "CSIT"
+    preferred_course: Optional[str] = ""
     preferred_location: Optional[str] = "Kathmandu"
-    budget_max_npr: Optional[int] = 800000
+    budget_max_npr: Optional[int] = None
     scholarship_interest: Optional[bool] = True
 
 @app.post("/api/profile")
-async def update_user_profile(req: UpdateProfileRequest, student_id: str = "std_sujan_01"):
+async def update_user_profile(req: UpdateProfileRequest, student_id: str = "student_user"):
     return global_db.update_profile(student_id, req.model_dump())
 
 # --- AI Comparative Synthesis ---
@@ -525,7 +525,7 @@ async def simulate_real_world_event(req: SimulateEventRequest):
 
 class ChatRequest(BaseModel):
     query: str
-    student_id: Optional[str] = "std_sujan_01"
+    student_id: Optional[str] = "student_user"
     session_id: Optional[str] = "default_session"
     is_voice: Optional[bool] = False
 
@@ -533,7 +533,7 @@ class ChatRequest(BaseModel):
 async def copilot_chat(req: ChatRequest):
     return await copilot_agent.answer_query(
         user_query=req.query,
-        student_id=req.student_id or "std_sujan_01",
+        student_id=req.student_id or "student_user",
         session_id=req.session_id or "default_session",
         is_voice=req.is_voice or False
     )
@@ -541,6 +541,13 @@ async def copilot_chat(req: ChatRequest):
 @app.get("/api/chat/history")
 async def get_chat_history(session_id: str = "default_session"):
     return global_db.get_chat_history(session_id)
+
+@app.delete("/api/chat/history")
+@app.delete("/api/copilot/history")
+async def delete_chat_history(session_id: str = "default_session"):
+    global_db.delete_chat_history(session_id)
+    copilot_agent.clear_session(session_id)
+    return {"status": "success", "message": f"Session {session_id} history deleted"}
 
 @app.websocket("/ws/telemetry")
 async def websocket_telemetry(websocket: WebSocket):

@@ -1,11 +1,24 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { 
   Cpu, X, Send, Mic, MicOff, Volume2, Sparkles, Building2, 
-  ExternalLink, GraduationCap, CheckCircle2, ShieldCheck, ArrowRight, Bot, Zap
+  ExternalLink, GraduationCap, CheckCircle2, ShieldCheck, ArrowRight, Bot, Zap, Trash2, RotateCcw
 } from 'lucide-react'
 
+const WELCOME_MSG = {
+  id: 'msg_welcome',
+  sender: 'ai',
+  text: 'Namaste! I am EDUVA AI. I provide verified intelligence on Nepal universities, B.Sc. CSIT, BCA, Engineering, Medical, entrance deadlines, and scholarships. How may I guide your education path today?',
+  response_type: 'TEXT',
+  suggested_actions: ['What can I study after +2?', 'BSc CSIT Colleges in Kathmandu', 'Compare TU & KU', 'Upcoming Entrance Deadlines'],
+  source_citation: {
+    sourceName: 'Official University & Ministry Registries',
+    authorityLevel: 'LEVEL_1_AUTHORITATIVE',
+    verifiedAt: 'Today'
+  }
+}
+
 export default function ConversationalCopilot({ isOpen, onClose, initialQuery = '', theme }) {
-  const [sessionId] = useState(() => {
+  const [sessionId, setSessionId] = useState(() => {
     let sid = localStorage.getItem('eduva_chat_session_id')
     if (!sid) {
       sid = 'session_' + Math.random().toString(36).substring(2, 9)
@@ -14,28 +27,32 @@ export default function ConversationalCopilot({ isOpen, onClose, initialQuery = 
     return sid
   })
 
-  const [messages, setMessages] = useState([
-    {
-      id: 'msg_welcome',
-      sender: 'ai',
-      text: 'Namaste! I am EDUVA AI. I provide verified intelligence on Nepal universities, B.Sc. CSIT, BCA, Engineering, Medical, entrance deadlines, and scholarships. How may I guide your education path today?',
-      response_type: 'TEXT',
-      suggested_actions: ['What can I study after +2?', 'BSc CSIT Colleges in Kathmandu', 'Compare TU & KU', 'Upcoming Entrance Deadlines'],
-      source_citation: {
-        sourceName: 'Official University & Ministry Registries',
-        authorityLevel: 'LEVEL_1_AUTHORITATIVE',
-        verifiedAt: 'Today'
+  const [messages, setMessages] = useState(() => {
+    try {
+      const saved = localStorage.getItem('eduva_chat_messages')
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed
       }
-    }
-  ])
+    } catch (e) {}
+    return [WELCOME_MSG]
+  })
   const [inputQuery, setInputQuery] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [isListening, setIsListening] = useState(false)
+  const [isClearing, setIsClearing] = useState(false)
   const messagesEndRef = useRef(null)
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
+
+  // Persist messages across turns
+  useEffect(() => {
+    try {
+      localStorage.setItem('eduva_chat_messages', JSON.stringify(messages))
+    } catch (e) {}
+  }, [messages])
 
   useEffect(() => {
     if (isOpen) {
@@ -45,6 +62,28 @@ export default function ConversationalCopilot({ isOpen, onClose, initialQuery = 
       }
     }
   }, [isOpen, initialQuery])
+
+  // Clear / Delete recent chats
+  const handleClearHistory = async () => {
+    if (messages.length <= 1 && messages[0]?.id === 'msg_welcome') return
+    if (!window.confirm("Are you sure you want to delete your recent chat history? This will start a fresh conversation.")) return
+    
+    setIsClearing(true)
+    const oldSessionId = sessionId
+    const newSid = 'session_' + Math.random().toString(36).substring(2, 9)
+    localStorage.setItem('eduva_chat_session_id', newSid)
+    setSessionId(newSid)
+    setMessages([WELCOME_MSG])
+    localStorage.removeItem('eduva_chat_messages')
+
+    try {
+      await fetch(`/api/chat/history?session_id=${oldSessionId}`, { method: 'DELETE' })
+    } catch (err) {
+      console.warn('Backend history deletion note:', err)
+    } finally {
+      setIsClearing(false)
+    }
+  }
 
   const handleSend = async (queryText = inputQuery) => {
     const q = queryText.trim()
@@ -56,12 +95,13 @@ export default function ConversationalCopilot({ isOpen, onClose, initialQuery = 
     setIsTyping(true)
 
     // Retrieve active student profile if registered
-    let studentId = 'std_sujan_01'
+    let studentId = 'student_user'
     try {
       const savedProf = localStorage.getItem('eduva_user_profile')
       if (savedProf) {
         const p = JSON.parse(savedProf)
-        if (p.email) studentId = p.email
+        if (p.email && p.email.trim()) studentId = p.email.trim()
+        else if (p.username && p.username.trim()) studentId = p.username.trim()
       }
     } catch (e) {}
 
@@ -155,12 +195,27 @@ export default function ConversationalCopilot({ isOpen, onClose, initialQuery = 
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            className="p-2 rounded-xl hover:bg-slate-800 transition-colors text-slate-400 hover:text-white cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center space-x-2">
+            {messages.length > 1 && (
+              <button
+                type="button"
+                onClick={handleClearHistory}
+                disabled={isClearing}
+                className="px-2.5 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400 hover:text-rose-300 transition-all text-xs font-semibold flex items-center space-x-1.5 cursor-pointer disabled:opacity-50"
+                title="Delete Recent Chat History"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{isClearing ? 'Clearing...' : 'Clear History'}</span>
+              </button>
+            )}
+
+            <button
+              onClick={onClose}
+              className="p-2 rounded-xl hover:bg-slate-800 transition-colors text-slate-400 hover:text-white cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Message Thread */}

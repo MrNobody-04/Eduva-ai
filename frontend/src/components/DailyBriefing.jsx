@@ -11,7 +11,12 @@ export default function DailyBriefing({
   onNavigateTab,
   isDemoMode 
 }) {
-  const greeting = data?.greeting || "Good Morning, Sujan"
+  let registeredName = ""
+  try {
+    const p = JSON.parse(localStorage.getItem('eduva_user_profile') || '{}')
+    if (p.name && p.name.trim()) registeredName = p.name.trim()
+  } catch (e) {}
+  const greeting = registeredName ? `Good Day, ${registeredName}` : (data?.greeting?.replace(/Sujan/g, 'Scholar') || "Namaste, Scholar")
   const location = data?.location || "Kathmandu"
   const province = data?.province || "Bagmati Province"
 

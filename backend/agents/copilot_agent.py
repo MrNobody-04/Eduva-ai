@@ -33,13 +33,17 @@ class CopilotAgent:
                 "preferred_location": "Kathmandu",
                 "active_program": None,
                 "last_topic": None,
-                "gpa": 3.85,
+                "gpa": None,
                 "budget": None,
                 "history": []
             }
         return self.session_states[session_id]
 
-    async def answer_query(self, user_query: str, student_id: str = "std_sujan_01", session_id: str = "default_session", is_voice: bool = False) -> Dict[str, Any]:
+    def clear_session(self, session_id: str):
+        if session_id in self.session_states:
+            del self.session_states[session_id]
+
+    async def answer_query(self, user_query: str, student_id: str = "student_user", session_id: str = "default_session", is_voice: bool = False) -> Dict[str, Any]:
         query_strip = user_query.strip()
         query_lower = query_strip.lower()
         state = self._get_session_state(session_id)

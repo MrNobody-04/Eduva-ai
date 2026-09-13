@@ -127,6 +127,13 @@ class LivingDatabase:
             rows = cursor.fetchall()
             return [dict(row) for row in rows]
 
+    def delete_chat_history(self, session_id: str = "default_session") -> bool:
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM chat_messages WHERE session_id = ?", (session_id,))
+            conn.commit()
+            return True
+
     # --- Supabase PostgreSQL Operations ---
     def get_supabase_health(self) -> Dict[str, Any]:
         if not self.database_url:
@@ -362,13 +369,15 @@ class LivingDatabase:
                 pass
         return {
             "id": student_id,
-            "name": "Sujan Sharma",
-            "email": "gcsujan321@gmail.com",
+            "name": "",
+            "email": "",
             "stream": "Science",
-            "gpa": 3.85,
-            "preferred_course": "B.E. Computer Engineering / B.Sc. CSIT",
+            "gpa": None,
+            "graduation_year": 2026,
+            "preferred_course": "",
             "preferred_location": "Kathmandu",
-            "budget_max_npr": 800000
+            "budget_max_npr": None,
+            "scholarship_interest": True
         }
 
     def update_profile(self, student_id: str, profile_data: Dict[str, Any]) -> Dict[str, Any]:
