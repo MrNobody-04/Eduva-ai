@@ -151,6 +151,12 @@ class LivingDatabase:
 
             cur.execute("SELECT COUNT(*) FROM entrance_scorecards;")
             scorecards_count = cur.fetchone()[0]
+
+            cur.execute("SELECT COUNT(*) FROM entrance_exams;")
+            exams_count = cur.fetchone()[0]
+
+            cur.execute("SELECT COUNT(*) FROM applications;")
+            apps_count = cur.fetchone()[0]
             
             cur.close()
             conn.close()
@@ -162,7 +168,9 @@ class LivingDatabase:
                     "universities": univ_count,
                     "colleges": colleges_count,
                     "courses": courses_count,
-                    "entrance_scorecards": scorecards_count
+                    "entrance_scorecards": scorecards_count,
+                    "entrance_exams": exams_count,
+                    "applications": apps_count
                 },
                 "verified_level": "LEVEL_1_CLOUD_POSTGRES"
             }
@@ -173,6 +181,260 @@ class LivingDatabase:
                 "error": str(e),
                 "fallback": "Running on local in-memory dataset"
             }
+
+    # --- Entrance Exams Queries ---
+    def get_entrance_exams(self, status: Optional[str] = None) -> List[Dict[str, Any]]:
+        if self.database_url:
+            try:
+                import psycopg2
+                import psycopg2.extras
+                conn = psycopg2.connect(self.database_url, connect_timeout=5)
+                cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+                if status:
+                    cur.execute("SELECT * FROM entrance_exams WHERE UPPER(status) = %s ORDER BY application_deadline ASC;", (status.upper(),))
+                else:
+                    cur.execute("SELECT * FROM entrance_exams ORDER BY application_deadline ASC;")
+                rows = cur.fetchall()
+                cur.close()
+                conn.close()
+                return [dict(r) for r in rows]
+            except Exception as e:
+                pass
+        # Fallback local seed
+        from data.all_nepal_colleges_and_results import REAL_ENTRANCE_RESULTS
+        return []
+
+    def get_entrance_exam_by_id(self, exam_id: str) -> Optional[Dict[str, Any]]:
+        if self.database_url:
+            try:
+                import psycopg2
+                import psycopg2.extras
+                conn = psycopg2.connect(self.database_url, connect_timeout=5)
+                cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+                cur.execute("SELECT * FROM entrance_exams WHERE id = %s;", (exam_id,))
+                row = cur.fetchone()
+                cur.close()
+                conn.close()
+                if row:
+                    return dict(row)
+            except Exception:
+                pass
+        return None
+
+    # --- Student Applications Operations ---
+    def get_applications(self, student_id: str = "std_sujan_01") -> List[Dict[str, Any]]:
+        if self.database_url:
+            try:
+                import psycopg2
+                import psycopg2.extras
+                conn = psycopg2.connect(self.database_url, connect_timeout=5)
+                cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+                cur.execute("SELECT * FROM applications WHERE student_id = %s ORDER BY created_at DESC;", (student_id,))
+                rows = cur.fetchall()
+                cur.close()
+                conn.close()
+                return [dict(r) for r in rows]
+            except Exception:
+                pass
+        return []
+
+    def add_application(self, app_data: Dict[str, Any]) -> Dict[str, Any]:
+        if self.database_url:
+            try:
+                import psycopg2
+                from psycopg2.extras import Json
+                conn = psycopg2.connect(self.database_url, connect_timeout=5)
+                conn.autocommit = True
+                cur = conn.cursor()
+                import uuid
+                new_id = app_data.get("id") or f"app_{uuid.uuid4().hex[:8]}"
+                cur.execute("""
+                    INSERT INTO applications (id, student_id, university_name, program_name, deadline, status, urgency, notes, documents_json)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (id) DO UPDATE SET status = EXCLUDED.status, notes = EXCLUDED.notes;
+                """, (
+                    new_id, app_data.get("student_id", "std_sujan_01"), app_data["university_name"],
+                    app_data["program_name"], app_data.get("deadline", "2026-10-15"),
+                    app_data.get("status", "Applied"), app_data.get("urgency", "MEDIUM"),
+                    app_data.get("notes", ""), Json(app_data.get("documents_json", {}))
+                ))
+                cur.close()
+                conn.close()
+                app_data["id"] = new_id
+                return app_data
+            except Exception as e:
+                return {"error": str(e)}
+        return app_data
+
+    def update_application_status(self, app_id: str, new_status: str) -> bool:
+        if self.database_url:
+            try:
+                import psycopg2
+                conn = psycopg2.connect(self.database_url, connect_timeout=5)
+                conn.autocommit = True
+                cur = conn.cursor()
+                cur.execute("UPDATE applications SET status = %s WHERE id = %s;", (new_status, app_id))
+                cur.close()
+                conn.close()
+                return True
+            except Exception:
+                return False
+        return False
+
+    # --- Saved Items Operations ---
+    def get_saved_items(self, student_id: str = "std_sujan_01") -> List[Dict[str, Any]]:
+        if self.database_url:
+            try:
+                import psycopg2
+                import psycopg2.extras
+                conn = psycopg2.connect(self.database_url, connect_timeout=5)
+                cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+                cur.execute("SELECT * FROM saved_items WHERE student_id = %s ORDER BY created_at DESC;", (student_id,))
+                rows = cur.fetchall()
+                cur.close()
+                conn.close()
+                return [dict(r) for r in rows]
+            except Exception:
+                pass
+        return []
+
+    def toggle_saved_item(self, student_id: str, item_type: str, item_id: str, item_title: str, item_subtitle: str, item_data: Dict[str, Any]) -> Dict[str, Any]:
+        if self.database_url:
+            try:
+                import psycopg2
+                from psycopg2.extras import Json
+                conn = psycopg2.connect(self.database_url, connect_timeout=5)
+                conn.autocommit = True
+                cur = conn.cursor()
+                # Check if exists
+                cur.execute("SELECT id FROM saved_items WHERE student_id = %s AND item_type = %s AND item_id = %s;", (student_id, item_type, item_id))
+                existing = cur.fetchone()
+                if existing:
+                    cur.execute("DELETE FROM saved_items WHERE id = %s;", (existing[0],))
+                    action = "REMOVED"
+                else:
+                    import uuid
+                    new_id = f"sv_{uuid.uuid4().hex[:8]}"
+                    cur.execute("""
+                        INSERT INTO saved_items (id, student_id, item_type, item_id, item_title, item_subtitle, item_data)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s);
+                    """, (new_id, student_id, item_type, item_id, item_title, item_subtitle, Json(item_data)))
+                    action = "SAVED"
+                cur.close()
+                conn.close()
+                return {"status": "SUCCESS", "action": action, "item_id": item_id}
+            except Exception as e:
+                return {"status": "ERROR", "error": str(e)}
+        return {"status": "SUCCESS", "action": "SAVED"}
+
+    # --- Climate & Disaster Alerts Operations ---
+    def get_climate_alerts(self) -> List[Dict[str, Any]]:
+        if self.database_url:
+            try:
+                import psycopg2
+                import psycopg2.extras
+                conn = psycopg2.connect(self.database_url, connect_timeout=5)
+                cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+                cur.execute("SELECT * FROM climate_alerts ORDER BY timestamp DESC;")
+                rows = cur.fetchall()
+                cur.close()
+                conn.close()
+                return [dict(r) for r in rows]
+            except Exception:
+                pass
+        return []
+
+    # --- Student Profile Operations ---
+    def get_profile(self, student_id: str = "std_sujan_01") -> Dict[str, Any]:
+        if self.database_url:
+            try:
+                import psycopg2
+                import psycopg2.extras
+                conn = psycopg2.connect(self.database_url, connect_timeout=5)
+                cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+                cur.execute("SELECT * FROM profiles WHERE id = %s;", (student_id,))
+                row = cur.fetchone()
+                cur.close()
+                conn.close()
+                if row:
+                    return dict(row)
+            except Exception:
+                pass
+        return {
+            "id": student_id,
+            "name": "Sujan Sharma",
+            "email": "gcsujan321@gmail.com",
+            "stream": "Science",
+            "gpa": 3.85,
+            "preferred_course": "B.E. Computer Engineering / B.Sc. CSIT",
+            "preferred_location": "Kathmandu",
+            "budget_max_npr": 800000
+        }
+
+    def update_profile(self, student_id: str, profile_data: Dict[str, Any]) -> Dict[str, Any]:
+        if self.database_url:
+            try:
+                import psycopg2
+                conn = psycopg2.connect(self.database_url, connect_timeout=5)
+                conn.autocommit = True
+                cur = conn.cursor()
+                cur.execute("""
+                    INSERT INTO profiles (id, name, email, education_level, stream, gpa, graduation_year, preferred_course, preferred_location, budget_max_npr, scholarship_interest)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (id) DO UPDATE SET
+                        name = EXCLUDED.name,
+                        stream = EXCLUDED.stream,
+                        gpa = EXCLUDED.gpa,
+                        preferred_course = EXCLUDED.preferred_course,
+                        preferred_location = EXCLUDED.preferred_location,
+                        budget_max_npr = EXCLUDED.budget_max_npr;
+                """, (
+                    student_id, profile_data.get("name", "Student"), profile_data.get("email", ""),
+                    profile_data.get("education_level", "+2"), profile_data.get("stream", "Science"),
+                    profile_data.get("gpa", 3.85), profile_data.get("graduation_year", 2026),
+                    profile_data.get("preferred_course", "CSIT"), profile_data.get("preferred_location", "Kathmandu"),
+                    profile_data.get("budget_max_npr", 800000), profile_data.get("scholarship_interest", True)
+                ))
+                cur.close()
+                conn.close()
+                return {"status": "SUCCESS", "profile": profile_data}
+            except Exception as e:
+                return {"status": "ERROR", "error": str(e)}
+        return {"status": "SUCCESS", "profile": profile_data}
+
+    # --- Verification Queue Operations ---
+    def get_verification_queue(self) -> List[Dict[str, Any]]:
+        if self.database_url:
+            try:
+                import psycopg2
+                import psycopg2.extras
+                conn = psycopg2.connect(self.database_url, connect_timeout=5)
+                cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+                cur.execute("SELECT * FROM verification_queue ORDER BY detected_at DESC;")
+                rows = cur.fetchall()
+                cur.close()
+                conn.close()
+                return [dict(r) for r in rows]
+            except Exception:
+                pass
+        return []
+
+    def resolve_verification_item(self, item_id: str, action: str) -> bool:
+        if self.database_url:
+            try:
+                import psycopg2
+                conn = psycopg2.connect(self.database_url, connect_timeout=5)
+                conn.autocommit = True
+                cur = conn.cursor()
+                status = "APPROVED" if action.upper() == "APPROVE" else "REJECTED"
+                cur.execute("UPDATE verification_queue SET status = %s WHERE id = %s;", (status, item_id))
+                cur.close()
+                conn.close()
+                return True
+            except Exception:
+                return False
+        return False
+
 
 # Global DB Instance
 global_db = LivingDatabase()

@@ -131,10 +131,25 @@ async def get_daily_briefing(student_id: str = "std_sujan_01", city: Optional[st
                 "missing_documents": missing
             })
 
+    # Intelligent contextual greeting
+    import datetime
+    current_hour = datetime.datetime.now().hour
+    if 5 <= current_hour < 12:
+        greeting_prefix = "Good Morning"
+    elif 12 <= current_hour < 17:
+        greeting_prefix = "Good Afternoon"
+    elif 17 <= current_hour < 21:
+        greeting_prefix = "Good Evening"
+    else:
+        greeting_prefix = "Welcome back"
+
+    student_first_name = student.name.split()[0] if student.name else "Student"
+
     return {
         "student": student.model_dump(),
-        "greeting": f"Good Morning, {student.name.split()[0]}",
-        "date": "Sunday, September 13, 2026",
+        "greeting": f"{greeting_prefix}, {student_first_name}",
+        "headline": "Here is what needs your attention today",
+        "date": datetime.date.today().strftime("%A, %B %d, %Y"),
         "location": target_city,
         "province": regional_info.get("province", "Bagmati Province"),
         "weather": weather,
@@ -259,6 +274,147 @@ async def get_notifications(student_id: str = "std_sujan_01"):
 @app.get("/api/climate-disaster")
 async def get_climate_disaster():
     return get_climate_disaster_data()
+
+# --- Entrance Exam Center Endpoints ---
+@app.get("/api/entrance-exams")
+async def get_all_entrance_exams(status: Optional[str] = None):
+    return global_db.get_entrance_exams(status=status)
+
+@app.get("/api/entrance-exams/{exam_id}")
+async def get_entrance_exam_detail(exam_id: str):
+    ex = global_db.get_entrance_exam_by_id(exam_id)
+    if not ex:
+        raise HTTPException(status_code=404, detail="Entrance examination not found")
+    return ex
+
+# --- Student Applications Endpoints ---
+@app.get("/api/applications")
+async def get_student_applications(student_id: str = "std_sujan_01"):
+    return global_db.get_applications(student_id)
+
+class NewApplicationRequest(BaseModel):
+    university_name: str
+    program_name: str
+    deadline: Optional[str] = "2026-10-15"
+    status: Optional[str] = "Applied"
+    urgency: Optional[str] = "MEDIUM"
+    notes: Optional[str] = ""
+    documents_json: Optional[Dict[str, Any]] = None
+
+@app.post("/api/applications")
+async def create_student_application(req: NewApplicationRequest, student_id: str = "std_sujan_01"):
+    data = req.model_dump()
+    data["student_id"] = student_id
+    return global_db.add_application(data)
+
+class UpdateAppStatusRequest(BaseModel):
+    status: str
+
+@app.patch("/api/applications/{app_id}")
+async def patch_application_status(app_id: str, req: UpdateAppStatusRequest):
+    success = global_db.update_application_status(app_id, req.status)
+    return {"status": "SUCCESS" if success else "FAILED"}
+
+# --- Saved Items Endpoints ---
+@app.get("/api/saved")
+async def get_saved_items(student_id: str = "std_sujan_01"):
+    return global_db.get_saved_items(student_id)
+
+class ToggleSavedRequest(BaseModel):
+    item_type: str
+    item_id: str
+    item_title: str
+    item_subtitle: Optional[str] = ""
+    item_data: Optional[Dict[str, Any]] = None
+
+@app.post("/api/saved/toggle")
+async def toggle_save_item(req: ToggleSavedRequest, student_id: str = "std_sujan_01"):
+    return global_db.toggle_saved_item(
+        student_id=student_id,
+        item_type=req.item_type,
+        item_id=req.item_id,
+        item_title=req.item_title,
+        item_subtitle=req.item_subtitle or "",
+        item_data=req.item_data or {}
+    )
+
+# --- Climate & Disaster Alerts Endpoint ---
+@app.get("/api/alerts")
+async def get_all_alerts():
+    alerts = global_db.get_climate_alerts()
+    if not alerts:
+        return get_climate_disaster_data()
+    return alerts
+
+# --- Student Profile Endpoints ---
+@app.get("/api/profile")
+async def get_user_profile(student_id: str = "std_sujan_01"):
+    return global_db.get_profile(student_id)
+
+class UpdateProfileRequest(BaseModel):
+    name: Optional[str] = "Sujan Sharma"
+    email: Optional[str] = ""
+    education_level: Optional[str] = "+2"
+    stream: Optional[str] = "Science"
+    gpa: Optional[float] = 3.85
+    graduation_year: Optional[int] = 2026
+    preferred_course: Optional[str] = "CSIT"
+    preferred_location: Optional[str] = "Kathmandu"
+    budget_max_npr: Optional[int] = 800000
+    scholarship_interest: Optional[bool] = True
+
+@app.post("/api/profile")
+async def update_user_profile(req: UpdateProfileRequest, student_id: str = "std_sujan_01"):
+    return global_db.update_profile(student_id, req.model_dump())
+
+# --- AI Comparative Synthesis ---
+class CompareAIRequest(BaseModel):
+    comparison_type: str = "UNIVERSITIES"
+    entity_ids: List[str]
+    question: Optional[str] = "Which of these is better for someone on a limited budget?"
+
+@app.post("/api/compare/ai-analysis")
+async def analyze_comparison_with_ai(req: CompareAIRequest):
+    entities = []
+    if req.comparison_type.upper() == "UNIVERSITIES":
+        all_u = get_all_nepal_universities()
+        entities = [u for u in all_u if u["id"] in req.entity_ids]
+    else:
+        all_c = get_all_nepal_colleges()
+        entities = [c for c in all_c if c["id"] in req.entity_ids]
+        
+    names = [e["name"] for e in entities]
+    context = f"Comparing: {', '.join(names)}.\nDetailed Entities: {entities[:3]}"
+    
+    gemini_res = global_gemini_service.generate_chat_response(
+        user_query=req.question or "Provide an objective comparative evaluation of these institutions.",
+        context_summary=context
+    )
+    
+    analysis_text = gemini_res.get("text", "")
+    if not analysis_text:
+        analysis_text = f"Comparing {', '.join(names)}: Each institution has distinct advantages. Look closely at constituent fee quotas vs. affiliated private college fees."
+        
+    return {
+        "analysis": analysis_text,
+        "entities_compared": names,
+        "key_used": gemini_res.get("key_used", "Local Fallback"),
+        "source": "EDUVA AI Comparative Reasoning Engine"
+    }
+
+# --- Admin Verification Queue ---
+@app.get("/api/admin/verification-queue")
+async def get_admin_verification_queue():
+    return global_db.get_verification_queue()
+
+class ResolveVerificationRequest(BaseModel):
+    action: str = "APPROVE"
+
+@app.post("/api/admin/verification-queue/{item_id}/resolve")
+async def resolve_admin_queue_item(item_id: str, req: ResolveVerificationRequest):
+    success = global_db.resolve_verification_item(item_id, req.action)
+    return {"status": "SUCCESS" if success else "FAILED"}
+
 
 @app.get("/api/email-guardian/inbox")
 async def get_guardian_inbox():

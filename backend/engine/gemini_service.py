@@ -47,6 +47,7 @@ class GeminiService:
         self,
         user_query: str,
         context_summary: str = '',
+        conversation_history: Optional[List[Dict[str, str]]] = None,
         system_instruction: Optional[str] = None
     ) -> Dict[str, Any]:
         if not self.keys:
@@ -57,14 +58,30 @@ class GeminiService:
             }
 
         default_sys = (
-            'You are EDUVA AI, the authoritative higher education AI guide for Nepal. '
-            'You assist students with Nepal universities (TU, KU, PokU, PU, etc.), entrance exams '
-            '(IOE, CEE, KUCAT, CMAT), scholarships, and courses (+2 to Bachelor/Masters). '
-            'Be clear, concise, highly encouraging, and accurate. Support English, Devanagari Nepali, '
-            'and Romanized Nepali naturally.'
+            "You are EDUVA AI, Nepal's personal higher education and university admission counselor. "
+            "Your personality is calm, deeply knowledgeable, encouraging, and honest. "
+            "NEVER use repetitive AI cliches like 'Certainly!', 'Sure!', 'I'd be happy to help!', or 'Based on your query'. "
+            "Speak naturally like an experienced senior educational advisor in Kathmandu (e.g. 'That is a solid option', "
+            "'I'd be careful with that college because...', 'Before deciding, check if their syllabus aligns with...'). "
+            "Support English, Devanagari Nepali, and Romanized Nepali naturally based on student language. "
+            "Maintain strict zero-hallucination: if an entrance deadline or fee is not verified, advise checking the official university gazette. "
+            "Always reference official institutions (Tribhuvan University, Kathmandu University, Pokhara University, IOE, MEC, MOEST)."
         )
         sys_prompt = system_instruction or default_sys
-        full_prompt = f'CONTEXT FROM NEPAL EDUCATION KNOWLEDGE GRAPH:\n{context_summary}\n\nSTUDENT QUERY:\n{user_query}' if context_summary else user_query
+
+        history_text = ""
+        if conversation_history:
+            recent_turns = conversation_history[-6:]
+            history_text = "\n".join([f"{t.get('role', 'User').capitalize()}: {t.get('content', '')}" for t in recent_turns])
+
+        prompt_parts = []
+        if context_summary:
+            prompt_parts.append(f"CURRENT STUDENT PROFILE & CONTEXT:\n{context_summary}")
+        if history_text:
+            prompt_parts.append(f"PRIOR CONVERSATION HISTORY:\n{history_text}")
+        prompt_parts.append(f"STUDENT QUERY:\n{user_query}")
+        
+        full_prompt = "\n\n".join(prompt_parts)
 
         attempts = len(self.keys)
         last_error = None

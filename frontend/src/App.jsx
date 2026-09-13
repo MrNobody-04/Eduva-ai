@@ -1,25 +1,31 @@
 import React, { useState, useEffect } from 'react'
 import Navbar from './components/Navbar'
+import LandingPage from './components/LandingPage'
 import DailyBriefing from './components/DailyBriefing'
 import CourseIntelligence from './components/CourseIntelligence'
 import UniversityHub from './components/UniversityHub'
 import CollegesDirectory from './components/CollegesDirectory'
+import EntranceCenter from './components/EntranceCenter'
 import ComparisonView from './components/ComparisonView'
+import ApplicationTracker from './components/ApplicationTracker'
+import SavedHub from './components/SavedHub'
+import AlertsAndSafety from './components/AlertsAndSafety'
 import EntranceResultsViewer from './components/EntranceResultsViewer'
-import AIControlCenter from './components/AIControlCenter'
 import ScholarshipsPortal from './components/ScholarshipsPortal'
-import ClimateDisasterHub from './components/ClimateDisasterHub'
-import EmailGuardian from './components/EmailGuardian'
-import AiApplicationDrafter from './components/AiApplicationDrafter'
+import AdminConsole from './components/AdminConsole'
 import ConversationalCopilot from './components/ConversationalCopilot'
+import ProfileModal from './components/ProfileModal'
+import MobileBottomNav from './components/MobileBottomNav'
 import { Bot, Heart, Search, X, BookOpen, Building2, GraduationCap, ArrowRight } from 'lucide-react'
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('briefing')
+  const [activeTab, setActiveTab] = useState('landing')
   const [theme, setTheme] = useState(() => localStorage.getItem('eduva_theme') || 'dark')
   const [isDemoMode, setIsDemoMode] = useState(() => localStorage.getItem('eduva_demo_mode') === 'true')
   const [isCopilotOpen, setIsCopilotOpen] = useState(false)
+  const [copilotInitialQuery, setCopilotInitialQuery] = useState('')
   const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const [isProfileOpen, setIsProfileOpen] = useState(false)
 
   // Core Data
   const [dailyBriefing, setDailyBriefing] = useState(null)
@@ -41,6 +47,11 @@ export default function App() {
     const next = !isDemoMode
     setIsDemoMode(next)
     localStorage.setItem('eduva_demo_mode', next.toString())
+  }
+
+  const openCopilotWithPrompt = (promptText = '') => {
+    setCopilotInitialQuery(promptText)
+    setIsCopilotOpen(true)
   }
 
   // Keyboard shortcut Ctrl+K for search
@@ -107,13 +118,21 @@ export default function App() {
         theme={theme}
         toggleTheme={toggleTheme}
         onOpenSearch={() => setIsSearchOpen(true)}
-        isDemoMode={isDemoMode}
-        toggleDemoMode={toggleDemoMode}
+        onOpenProfile={() => setIsProfileOpen(true)}
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 pb-20 lg:pb-10">
         
+        {activeTab === 'landing' && (
+          <LandingPage
+            onExplore={() => setActiveTab('universities')}
+            onOpenCopilot={openCopilotWithPrompt}
+            onNavigateTab={(tab) => setActiveTab(tab)}
+            theme={theme}
+          />
+        )}
+
         {activeTab === 'briefing' && (
           <DailyBriefing
             data={dailyBriefing}
@@ -143,9 +162,35 @@ export default function App() {
           />
         )}
 
+        {activeTab === 'entrance' && (
+          <EntranceCenter
+            theme={theme}
+          />
+        )}
+
         {activeTab === 'compare' && (
           <ComparisonView
             theme={theme}
+          />
+        )}
+
+        {activeTab === 'alerts' && (
+          <AlertsAndSafety
+            theme={theme}
+          />
+        )}
+
+        {activeTab === 'applications' && (
+          <ApplicationTracker
+            theme={theme}
+            onOpenCopilot={() => setIsCopilotOpen(true)}
+          />
+        )}
+
+        {activeTab === 'saved' && (
+          <SavedHub
+            theme={theme}
+            onNavigateTab={(tab) => setActiveTab(tab)}
           />
         )}
 
@@ -156,45 +201,38 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'control_center' && (
-          <AIControlCenter
-            theme={theme}
-          />
-        )}
-
         {activeTab === 'scholarships' && (
           <ScholarshipsPortal
             theme={theme}
           />
         )}
 
-        {activeTab === 'climate' && (
-          <ClimateDisasterHub
+        {activeTab === 'admin' && (
+          <AdminConsole
             theme={theme}
-          />
-        )}
-
-        {activeTab === 'email_guardian' && (
-          <EmailGuardian
-            theme={theme}
-          />
-        )}
-
-        {activeTab === 'sop_drafter' && (
-          <AiApplicationDrafter
-            theme={theme}
+            isDemoMode={isDemoMode}
+            toggleDemoMode={toggleDemoMode}
           />
         )}
 
       </main>
 
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        onOpenCopilot={() => setIsCopilotOpen(true)}
+        onOpenProfile={() => setIsProfileOpen(true)}
+        theme={theme}
+      />
+
       {/* Global Universal Search Modal (Ctrl+K) */}
       {isSearchOpen && (
         <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
           <div className={`max-w-2xl w-full rounded-3xl border shadow-2xl p-6 space-y-4 ${
-            theme === 'dark' ? 'bg-gray-900 border-gray-800 text-white' : 'bg-white border-slate-200 text-slate-900'
+            theme === 'dark' ? 'bg-[#0E1424] border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900'
           }`}>
-            <div className="flex items-center justify-between border-b pb-3 border-gray-800">
+            <div className="flex items-center justify-between border-b pb-3 border-slate-800">
               <div className="flex items-center gap-2 flex-1">
                 <Search className="w-5 h-5 text-blue-500" />
                 <input
@@ -203,11 +241,11 @@ export default function App() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleUniversalSearch()}
-                  placeholder="Search universities, colleges, BCA, CSIT, or 'ABC College'..."
-                  className="w-full bg-transparent text-sm font-semibold focus:outline-none"
+                  placeholder="Search universities, colleges, BCA, CSIT, or 'Pulchowk'..."
+                  className="w-full bg-transparent text-sm font-semibold focus:outline-none placeholder:text-slate-500"
                 />
               </div>
-              <button onClick={() => setIsSearchOpen(false)} className="p-1 rounded-lg hover:bg-gray-800 cursor-pointer">
+              <button onClick={() => setIsSearchOpen(false)} className="p-1 rounded-lg hover:bg-slate-800 cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -232,10 +270,10 @@ export default function App() {
                       <div 
                         key={u.id}
                         onClick={() => { setActiveTab('universities'); setIsSearchOpen(false); }}
-                        className="p-2.5 rounded-xl hover:bg-gray-800/50 cursor-pointer flex items-center justify-between text-xs"
+                        className="p-2.5 rounded-xl hover:bg-slate-800/50 cursor-pointer flex items-center justify-between text-xs"
                       >
                         <span className="font-bold">{u.name} ({u.acronym})</span>
-                        <span className="text-[10px] text-gray-400">{u.location}</span>
+                        <span className="text-[10px] text-slate-400">{u.location}</span>
                       </div>
                     ))}
                   </div>
@@ -248,13 +286,13 @@ export default function App() {
                       <div 
                         key={c.id}
                         onClick={() => { setActiveTab('colleges'); setIsSearchOpen(false); }}
-                        className="p-2.5 rounded-xl hover:bg-gray-800/50 cursor-pointer flex items-center justify-between text-xs"
+                        className="p-2.5 rounded-xl hover:bg-slate-800/50 cursor-pointer flex items-center justify-between text-xs"
                       >
                         <div>
                           <span className="font-bold block">{c.name}</span>
                           <span className="text-[10px] text-blue-400">{c.university}</span>
                         </div>
-                        <span className="text-[10px] text-gray-400">{c.location}</span>
+                        <span className="text-[10px] text-slate-400">{c.location}</span>
                       </div>
                     ))}
                   </div>
@@ -267,19 +305,12 @@ export default function App() {
                       <div 
                         key={cr.id}
                         onClick={() => { setActiveTab('courses'); setIsSearchOpen(false); }}
-                        className="p-2.5 rounded-xl hover:bg-gray-800/50 cursor-pointer flex items-center justify-between text-xs"
+                        className="p-2.5 rounded-xl hover:bg-slate-800/50 cursor-pointer flex items-center justify-between text-xs"
                       >
                         <span className="font-bold">{cr.name} ({cr.code})</span>
                         <span className="text-[10px] text-emerald-400 font-bold">{cr.category}</span>
                       </div>
                     ))}
-                  </div>
-                )}
-
-                {searchResults.autonomous_discovery && (
-                  <div className="p-3 rounded-xl bg-emerald-950/20 border border-emerald-500/30 text-xs text-emerald-300">
-                    <span className="font-black block">✓ Autonomous Agent Discovered & Indexed:</span>
-                    <span>{searchResults.autonomous_discovery.discovered_record?.name} ({searchResults.autonomous_discovery.discovered_record?.university})</span>
                   </div>
                 )}
               </div>
@@ -289,7 +320,7 @@ export default function App() {
       )}
 
       {/* Floating EDUVA AI Button */}
-      <div className="fixed bottom-6 right-6 z-40">
+      <div className="fixed bottom-20 lg:bottom-6 right-6 z-40">
         <button
           onClick={() => setIsCopilotOpen(true)}
           className="group flex items-center space-x-2.5 px-5 py-3.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white rounded-full shadow-2xl shadow-blue-600/40 hover:scale-105 transition-all cursor-pointer border border-white/20"
@@ -305,29 +336,37 @@ export default function App() {
       {/* Conversational Copilot Modal */}
       <ConversationalCopilot
         isOpen={isCopilotOpen}
-        onClose={() => setIsCopilotOpen(false)}
+        onClose={() => { setIsCopilotOpen(false); setCopilotInitialQuery(''); }}
+        initialQuery={copilotInitialQuery}
+        theme={theme}
+      />
+
+      {/* Student Profile Modal */}
+      <ProfileModal
+        isOpen={isProfileOpen}
+        onClose={() => setIsProfileOpen(false)}
         theme={theme}
       />
 
       {/* Footer */}
-      <footer className={`border-t py-6 transition-colors w-full ${
-        theme === 'dark' ? 'border-gray-800/80 bg-[#080C14]' : 'border-slate-200 bg-white'
+      <footer className={`border-t py-8 transition-colors w-full ${
+        theme === 'dark' ? 'border-slate-800/80 bg-[#080C14]' : 'border-slate-200 bg-white'
       }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
           <div className="flex items-center space-x-2">
             <span className="font-black tracking-wider bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
               EDUVA AI
             </span>
-            <span className={theme === 'dark' ? 'text-gray-500' : 'text-slate-400'}>•</span>
-            <span className={theme === 'dark' ? 'text-gray-400' : 'text-slate-500'}>
+            <span className={theme === 'dark' ? 'text-slate-600' : 'text-slate-400'}>•</span>
+            <span className={theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}>
               Nepal Higher Education Intelligence Platform
             </span>
           </div>
 
           <div className="flex items-center space-x-1.5 font-semibold">
-            <span className={theme === 'dark' ? 'text-gray-400' : 'text-slate-600'}>Crafted with</span>
+            <span className={theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}>Crafted with</span>
             <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
-            <span className={theme === 'dark' ? 'text-gray-400' : 'text-slate-600'}>by</span>
+            <span className={theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}>by</span>
             <span className="font-black text-blue-500 hover:text-indigo-400 transition-colors">
               SujanGC
             </span>

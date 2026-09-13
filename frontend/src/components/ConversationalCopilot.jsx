@@ -4,7 +4,7 @@ import {
   ExternalLink, GraduationCap, CheckCircle2, ShieldCheck, ArrowRight
 } from 'lucide-react'
 
-export default function ConversationalCopilot({ isOpen, onClose, theme }) {
+export default function ConversationalCopilot({ isOpen, onClose, initialQuery = '', theme }) {
   const [messages, setMessages] = useState([
     {
       id: 'msg_welcome',
@@ -29,8 +29,13 @@ export default function ConversationalCopilot({ isOpen, onClose, theme }) {
   }
 
   useEffect(() => {
-    if (isOpen) scrollToBottom()
-  }, [messages, isOpen])
+    if (isOpen) {
+      scrollToBottom()
+      if (initialQuery && initialQuery.trim()) {
+        handleSend(initialQuery.trim())
+      }
+    }
+  }, [isOpen, initialQuery])
 
   const handleSend = async (queryText = inputQuery) => {
     const q = queryText.trim()
