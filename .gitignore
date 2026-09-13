@@ -1,0 +1,31 @@
+# Environment Variables & Secrets (NEVER COMMIT SENSITIVE KEYS)
+.env
+.env.*
+!.env.example
+*.env
+
+# Dependencies
+node_modules/
+__pycache__/
+*.py[cod]
+*.class
+.venv/
+venv/
+env/
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# Local databases & logs
+*.db
+*.sqlite3
+*.log
+.system_generated/
+
+# OS & Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
