@@ -54,12 +54,16 @@ export default function App() {
     setIsCopilotOpen(true)
   }
 
-  // Keyboard shortcut Ctrl+K for search
+  // Keyboard shortcuts: Ctrl+K for search, Ctrl+Shift+A for admin console
   useEffect(() => {
     const handleKeyDown = (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault()
         setIsSearchOpen(true)
+      }
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+        e.preventDefault()
+        setActiveTab('admin')
       }
       if (e.key === 'Escape') {
         setIsSearchOpen(false)
@@ -363,13 +367,22 @@ export default function App() {
             </span>
           </div>
 
-          <div className="flex items-center space-x-1.5 font-semibold">
-            <span className={theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}>Crafted with</span>
-            <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
-            <span className={theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}>by</span>
-            <span className="font-black text-blue-500 hover:text-indigo-400 transition-colors">
-              SujanGC
-            </span>
+          <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-1.5 font-semibold">
+              <span className={theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}>Crafted with</span>
+              <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
+              <span className={theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}>by</span>
+              <span className="font-black text-blue-500 hover:text-indigo-400 transition-colors">
+                SujanGC
+              </span>
+            </div>
+            <button
+              onClick={() => setActiveTab('admin')}
+              className="text-[10px] text-slate-500 hover:text-slate-400 underline decoration-slate-700 transition-colors cursor-pointer"
+              title="System Admin & Verification (Ctrl+Shift+A)"
+            >
+              • Admin
+            </button>
           </div>
         </div>
       </footer>

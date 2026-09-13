@@ -148,7 +148,7 @@ export default function AdminConsole({ theme, isDemoMode, toggleDemoMode }) {
                 <div className="space-y-1">
                   <span className="text-xs text-slate-400 block">Proposed Value:</span>
                   <p className="text-xs font-bold text-slate-200 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800 font-mono">
-                    {typeof item.proposed_value === 'object' ? JSON.stringify(item.proposed_value) : item.proposed_value}
+                    {item.detected_value || (typeof item.proposed_value === 'object' ? JSON.stringify(item.proposed_value) : item.proposed_value) || item.current_value}
                   </p>
                 </div>
 

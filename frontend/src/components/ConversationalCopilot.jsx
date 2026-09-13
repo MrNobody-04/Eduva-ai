@@ -1,10 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { 
-  Bot, X, Send, Mic, MicOff, Volume2, Sparkles, Building2, 
-  ExternalLink, GraduationCap, CheckCircle2, ShieldCheck, ArrowRight
+  Cpu, X, Send, Mic, MicOff, Volume2, Sparkles, Building2, 
+  ExternalLink, GraduationCap, CheckCircle2, ShieldCheck, ArrowRight, Bot, Zap
 } from 'lucide-react'
 
 export default function ConversationalCopilot({ isOpen, onClose, initialQuery = '', theme }) {
+  const [sessionId] = useState(() => {
+    let sid = localStorage.getItem('eduva_chat_session_id')
+    if (!sid) {
+      sid = 'session_' + Math.random().toString(36).substring(2, 9)
+      localStorage.setItem('eduva_chat_session_id', sid)
+    }
+    return sid
+  })
+
   const [messages, setMessages] = useState([
     {
       id: 'msg_welcome',
@@ -46,11 +55,25 @@ export default function ConversationalCopilot({ isOpen, onClose, initialQuery = 
     setInputQuery('')
     setIsTyping(true)
 
+    // Retrieve active student profile if registered
+    let studentId = 'std_sujan_01'
+    try {
+      const savedProf = localStorage.getItem('eduva_user_profile')
+      if (savedProf) {
+        const p = JSON.parse(savedProf)
+        if (p.email) studentId = p.email
+      }
+    } catch (e) {}
+
     try {
       const res = await fetch('/api/copilot/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: q, session_id: 'active_session' })
+        body: JSON.stringify({ 
+          query: q, 
+          session_id: sessionId,
+          student_id: studentId 
+        })
       })
       if (res.ok) {
         const data = await res.json()
@@ -104,31 +127,37 @@ export default function ConversationalCopilot({ isOpen, onClose, initialQuery = 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
-      <div className={`w-full max-w-3xl h-[85vh] rounded-3xl border shadow-2xl flex flex-col overflow-hidden transition-all ${
-        theme === 'dark' ? 'bg-[#080C14] border-gray-800 text-white' : 'bg-white border-slate-200 text-slate-900'
+      <div className={`w-full max-w-3xl h-[85vh] rounded-3xl border shadow-2xl flex flex-col overflow-hidden transition-all animate-slide-up ${
+        theme === 'dark' ? 'bg-[#0E1424] border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900'
       }`}>
-        {/* Header */}
+        {/* Header with Futuristic AI Logo */}
         <div className={`p-4 sm:p-5 border-b flex items-center justify-between ${
-          theme === 'dark' ? 'border-gray-800 bg-gray-900/60' : 'border-slate-200 bg-slate-50'
+          theme === 'dark' ? 'border-slate-800 bg-slate-900/60' : 'border-slate-200 bg-slate-50'
         }`}>
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md">
-              <Bot className="w-5 h-5 animate-pulse" />
+            <div className="relative w-11 h-11 rounded-2xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-600 p-0.5 shadow-lg shadow-blue-500/30">
+              <div className={`w-full h-full rounded-[14px] flex items-center justify-center ${
+                theme === 'dark' ? 'bg-[#080C14]' : 'bg-white'
+              }`}>
+                <Cpu className="w-6 h-6 text-blue-400 animate-pulse" />
+              </div>
+              <span className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-400 rounded-full border-2 border-[#080C14] animate-ping"></span>
             </div>
+
             <div>
               <div className="flex items-center space-x-2">
-                <h3 className="font-black text-sm">EDUVA AI Education Assistant</h3>
+                <h3 className="font-black text-sm tracking-tight">EDUVA AI Intelligence Hub</h3>
                 <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
                   Level 1 Verified
                 </span>
               </div>
-              <p className="text-[11px] opacity-60">Context-Aware • Zero Fabrication Guarantee</p>
+              <p className="text-[11px] opacity-60">Persistent Conversational Memory • Zero Fabrication</p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="p-2 rounded-xl hover:bg-gray-800/60 transition-colors text-gray-400 hover:text-white cursor-pointer"
+            className="p-2 rounded-xl hover:bg-slate-800 transition-colors text-slate-400 hover:text-white cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -145,7 +174,7 @@ export default function ConversationalCopilot({ isOpen, onClose, initialQuery = 
                 m.sender === 'user'
                   ? 'bg-blue-600 text-white rounded-br-none shadow-md'
                   : theme === 'dark'
-                    ? 'bg-gray-900/90 border border-gray-800 rounded-bl-none text-gray-200'
+                    ? 'bg-slate-900/90 border border-slate-800 rounded-bl-none text-slate-200'
                     : 'bg-slate-100 border border-slate-200 rounded-bl-none text-slate-800'
               }`}>
                 <p className="whitespace-pre-wrap">{m.text}</p>
@@ -153,16 +182,16 @@ export default function ConversationalCopilot({ isOpen, onClose, initialQuery = 
                 {/* Multi-Format Renderers */}
                 {/* 1. Comparison Table */}
                 {m.comparison_data && (
-                  <div className="overflow-x-auto mt-2 pt-2 border-t border-gray-800/60">
+                  <div className="overflow-x-auto mt-2 pt-2 border-t border-slate-800/60">
                     <table className="w-full text-[11px] text-left">
                       <thead>
-                        <tr className="border-b border-gray-700">
+                        <tr className="border-b border-slate-700">
                           {m.comparison_data.headers.map((h, i) => (
                             <th key={i} className="py-1.5 px-2 font-bold text-blue-400">{h}</th>
                           ))}
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-800">
+                      <tbody className="divide-y divide-slate-800">
                         {m.comparison_data.rows.map((r, ri) => (
                           <tr key={ri}>
                             {r.map((cell, ci) => (
@@ -177,9 +206,9 @@ export default function ConversationalCopilot({ isOpen, onClose, initialQuery = 
 
                 {/* 2. Course Cards */}
                 {m.cards && m.response_type === 'COURSE_CARDS' && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2 pt-2 border-t border-gray-800/60">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2 pt-2 border-t border-slate-800/60">
                     {m.cards.map((card, i) => (
-                      <div key={i} className="p-3 rounded-xl bg-gray-950/60 border border-gray-800 space-y-1 text-xs">
+                      <div key={i} className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 space-y-1 text-xs">
                         <span className="font-bold text-white block">{card.title} ({card.code})</span>
                         <span className="text-[10px] text-emerald-400 font-bold block">{card.duration}</span>
                         <span className="text-[10px] opacity-70 block">Entrance: {card.entrance_exam}</span>
@@ -190,9 +219,9 @@ export default function ConversationalCopilot({ isOpen, onClose, initialQuery = 
 
                 {/* 3. College Cards */}
                 {m.cards && m.response_type === 'COLLEGE_CARDS' && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2 pt-2 border-t border-gray-800/60">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2 pt-2 border-t border-slate-800/60">
                     {m.cards.map((col, i) => (
-                      <div key={i} className="p-3 rounded-xl bg-gray-950/60 border border-gray-800 space-y-1 text-xs">
+                      <div key={i} className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 space-y-1 text-xs">
                         <span className="font-bold text-white block">{col.name}</span>
                         <span className="text-[10px] text-blue-400 block">{col.university} • {col.location}</span>
                         <span className="text-[10px] text-emerald-400 block font-bold">{col.fee_sample}</span>
@@ -203,7 +232,7 @@ export default function ConversationalCopilot({ isOpen, onClose, initialQuery = 
 
                 {/* Source Verification Badge */}
                 {m.source_citation && (
-                  <div className="mt-2 pt-2 border-t border-gray-800/50 flex items-center justify-between text-[10px] opacity-60">
+                  <div className="mt-2 pt-2 border-t border-slate-800/50 flex items-center justify-between text-[10px] opacity-60">
                     <span className="flex items-center gap-1">
                       <ShieldCheck className="w-3 h-3 text-emerald-400" />
                       Verified Source: {m.source_citation.sourceName}
@@ -235,7 +264,7 @@ export default function ConversationalCopilot({ isOpen, onClose, initialQuery = 
               <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce"></div>
               <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce delay-100"></div>
               <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce delay-200"></div>
-              <span>EDUVA AI is researching official university sources...</span>
+              <span>EDUVA AI is analyzing official university records...</span>
             </div>
           )}
           <div ref={messagesEndRef} />
@@ -243,7 +272,7 @@ export default function ConversationalCopilot({ isOpen, onClose, initialQuery = 
 
         {/* Input Bar */}
         <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className={`p-4 border-t flex items-center gap-2 ${
-          theme === 'dark' ? 'border-gray-800 bg-gray-900/60' : 'border-slate-200 bg-slate-50'
+          theme === 'dark' ? 'border-slate-800 bg-slate-900/60' : 'border-slate-200 bg-slate-50'
         }`}>
           <button
             type="button"
@@ -251,7 +280,7 @@ export default function ConversationalCopilot({ isOpen, onClose, initialQuery = 
             className={`p-2.5 rounded-xl border transition-all cursor-pointer ${
               isListening
                 ? 'bg-rose-600 text-white animate-pulse border-rose-500'
-                : theme === 'dark' ? 'bg-gray-800 border-gray-700 text-gray-300' : 'bg-white border-slate-300 text-slate-700'
+                : theme === 'dark' ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-white border-slate-300 text-slate-700'
             }`}
             title="Voice input"
           >
@@ -264,7 +293,7 @@ export default function ConversationalCopilot({ isOpen, onClose, initialQuery = 
             onChange={(e) => setInputQuery(e.target.value)}
             placeholder="Ask about colleges, BCA, BSc CSIT, entrance dates, or +2 eligibility..."
             className={`flex-1 px-4 py-2.5 rounded-xl border text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              theme === 'dark' ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-slate-300 text-slate-900'
+              theme === 'dark' ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-300 text-slate-900'
             }`}
           />
 

@@ -88,11 +88,13 @@ class CopilotAgent:
         elif "bba" in query_lower:
             state["active_program"] = "BBA"
 
-        # 3. Intelligent Intent Classification & Multi-Format Generation
+        # 3. Append current user turn to conversational memory
+        state.setdefault("history", []).append({"role": "user", "content": user_query})
+
+        # 4. Intelligent Intent Classification & Multi-Format Generation
         response_data = self._route_and_synthesize(query_strip, query_lower, state, lang_label)
         
-        # 4. Log to SQLite & Update in-memory session history
-        state.setdefault("history", []).append({"role": "user", "content": user_query})
+        # 5. Append assistant turn to conversational memory & persist
         state["history"].append({"role": "assistant", "content": response_data["text"]})
         try:
             global_db.log_chat(session_id, "user", user_query, lang_label, is_voice)
@@ -197,38 +199,42 @@ class CopilotAgent:
                 }
             }
 
-        # Intent C: Specific Program & Colleges Query (e.g. "BCA colleges in Kathmandu", "TU affiliated for CSIT")
+        # Intent C: Specific Program & Colleges Query (only if directory search yields positive matches)
+        is_directory_search = any(kw in q_lower for kw in ["colleges offering", "colleges for", "find colleges", "list colleges", "top colleges"])
         for target_prog in ["B.Sc. CSIT", "BCA", "BIT", "B.E. Computer", "MBBS", "BBA", "Civil"]:
-            if target_prog.lower() in q_lower or (target_prog == "B.Sc. CSIT" and "csit" in q_lower):
+            if (target_prog.lower() in q_lower or (target_prog == "B.Sc. CSIT" and "csit" in q_lower)) and (is_directory_search or len(query.split()) <= 6):
                 matched = [c for c in all_colleges if target_prog in c.get("programs", []) or any(target_prog.lower() in p.lower() for p in c.get("programs", []))]
                 if "kathmandu" in q_lower or state.get("preferred_location") == "Kathmandu":
-                    matched = [c for c in matched if "kathmandu" in c["location"].lower() or "lalitpur" in c["location"].lower()]
+                    loc_matched = [c for c in matched if "kathmandu" in c["location"].lower() or "lalitpur" in c["location"].lower()]
+                    if loc_matched:
+                        matched = loc_matched
                 
-                state["last_colleges"] = matched[:4]
-                cards = [
-                    {
-                        "id": c["id"],
-                        "name": c["name"],
-                        "university": c["university"],
-                        "location": c["location"],
-                        "ownership": c.get("ownership", "AFFILIATED"),
-                        "programs": c.get("programs", []),
-                        "fee_sample": c.get("fee_structure", {}).get(target_prog, "NPR 450,000 - NPR 750,000 (Total)"),
-                        "admission_status": c.get("admission_status", "OPEN"),
-                        "website": c.get("official_website", "Official Portal")
-                    } for c in matched[:4]
-                ]
-                return {
-                    "text": f"Found {len(matched)} verified colleges offering {target_prog} in {state.get('preferred_location', 'Kathmandu')}. Here are the premier options currently accepting or preparing for the upcoming intake:",
-                    "response_type": "COLLEGE_CARDS",
-                    "cards": cards,
-                    "suggested_actions": [f"View {target_prog} Syllabus", "Entrance Exam Dates", "Apply for Scholarship"],
-                    "source_citation": {
-                        "sourceName": f"University Dean Office & Affiliation Records ({cards[0]['university'] if cards else 'Official'})",
-                        "authorityLevel": "LEVEL_1_AUTHORITATIVE",
-                        "verifiedAt": "2026-09-13"
+                if matched:
+                    state["last_colleges"] = matched[:4]
+                    cards = [
+                        {
+                            "id": c["id"],
+                            "name": c["name"],
+                            "university": c["university"],
+                            "location": c["location"],
+                            "ownership": c.get("ownership", "AFFILIATED"),
+                            "programs": c.get("programs", []),
+                            "fee_sample": c.get("fee_structure", {}).get(target_prog, "NPR 450,000 - NPR 750,000 (Total)"),
+                            "admission_status": c.get("admission_status", "OPEN"),
+                            "website": c.get("official_website", "Official Portal")
+                        } for c in matched[:4]
+                    ]
+                    return {
+                        "text": f"Found {len(matched)} verified colleges offering {target_prog} in {state.get('preferred_location', 'Kathmandu')}. Here are the premier options currently accepting or preparing for the upcoming intake:",
+                        "response_type": "COLLEGE_CARDS",
+                        "cards": cards,
+                        "suggested_actions": [f"View {target_prog} Syllabus", "Entrance Exam Dates", "Apply for Scholarship"],
+                        "source_citation": {
+                            "sourceName": f"University Dean Office & Affiliation Records ({cards[0]['university'] if cards else 'Official'})",
+                            "authorityLevel": "LEVEL_1_AUTHORITATIVE",
+                            "verifiedAt": "2026-09-13"
+                        }
                     }
-                }
 
         # Intent D: Entrance Examinations & Deadlines
         if "entrance" in q_lower or "exam" in q_lower or "deadline" in q_lower:

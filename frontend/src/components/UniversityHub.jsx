@@ -101,9 +101,9 @@ export default function UniversityHub({ theme }) {
           <div
             key={univ.id}
             onClick={() => { setSelectedUniv(univ); setActiveDetailTab('overview'); }}
-            className={`p-5 sm:p-6 rounded-3xl border transition-all hover:shadow-2xl cursor-pointer flex flex-col justify-between ${
+            className={`p-5 sm:p-6 rounded-3xl border transition-all duration-300 card-3d cursor-pointer flex flex-col justify-between ${
               theme === 'dark'
-                ? 'bg-gray-900/80 border-gray-800 hover:border-blue-500/50'
+                ? 'bg-[#0E1424] border-slate-800 hover:border-blue-500/50'
                 : 'bg-white border-slate-200 hover:border-blue-400'
             }`}
           >
@@ -155,8 +155,8 @@ export default function UniversityHub({ theme }) {
       {/* University Detail Modal */}
       {selectedUniv && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
-          <div className={`max-w-4xl w-full rounded-3xl border shadow-2xl p-6 sm:p-8 space-y-6 max-h-[90vh] overflow-y-auto ${
-            theme === 'dark' ? 'bg-gray-900 border-gray-800 text-white' : 'bg-white border-slate-200 text-slate-900'
+          <div className={`max-w-4xl w-full rounded-3xl border shadow-2xl p-6 sm:p-8 space-y-6 max-h-[90vh] overflow-y-auto animate-slide-up ${
+            theme === 'dark' ? 'bg-[#0E1424] border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900'
           }`}>
             {/* Header */}
             <div className="flex items-start justify-between border-b pb-4 border-gray-800/60">
