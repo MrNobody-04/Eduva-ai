@@ -418,7 +418,18 @@ export default function App() {
                         className="p-2.5 rounded-xl hover:bg-slate-800/50 cursor-pointer flex items-center justify-between text-xs"
                       >
                         <div>
-                          <span className="font-bold block">{c.name}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold block">{c.name}</span>
+                            {c.verification_status === 'VERIFIED_LEVEL_1' ? (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-emerald-500/15 border border-emerald-500/30 text-emerald-400">
+                                Verified
+                              </span>
+                            ) : (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-amber-500/15 border border-amber-500/30 text-amber-400">
+                                Provisional
+                              </span>
+                            )}
+                          </div>
                           <span className="text-[10px] text-blue-400">{c.university}</span>
                         </div>
                         <span className="text-[10px] text-slate-400">{c.location}</span>
@@ -440,6 +451,63 @@ export default function App() {
                         <span className="text-[10px] text-emerald-400 font-bold">{cr.category}</span>
                       </div>
                     ))}
+                  </div>
+                )}
+
+                {/* Honest No-Match State with Real Research Dispatch */}
+                {searchResults.total_matches === 0 && searchResults.research_suggestion && (
+                  <div className="p-4 rounded-2xl border border-amber-500/30 bg-amber-500/5 space-y-3 animate-fadeIn">
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                        <BookOpen className="w-4 h-4" />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-xs font-black text-amber-400 uppercase tracking-wide">
+                            Uncataloged Institution
+                          </h4>
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/20 text-amber-300">
+                            Zero Fake Matches
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-300 leading-relaxed">
+                          {searchResults.research_suggestion.message}
+                        </p>
+                        <p className="text-[11px] text-slate-400 italic">
+                          {searchResults.research_suggestion.note}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-amber-500/20 flex items-center justify-between">
+                      <span className="text-[11px] text-slate-400">Want EDUVA to research this?</span>
+                      <button
+                        onClick={async () => {
+                          try {
+                            const res = await fetch('/api/search/queue-research', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ query: searchQuery })
+                            })
+                            if (res.ok) {
+                              setToastNotification({
+                                id: Date.now(),
+                                title: 'Research Task Queued',
+                                message: `ResearchAgent is now investigating official university gazettes for "${searchQuery}".`,
+                                severity: 'LOW'
+                              })
+                              setIsSearchOpen(false)
+                            }
+                          } catch (e) {
+                            console.error(e)
+                          }
+                        }}
+                        className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white text-xs font-bold shadow-md cursor-pointer transition-all flex items-center gap-1.5"
+                      >
+                        <span>Queue Agent Investigation</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>

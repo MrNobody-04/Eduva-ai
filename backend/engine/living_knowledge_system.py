@@ -135,12 +135,16 @@ class LivingKnowledgeSystem:
             if q in cr["name"].lower() or q in cr["code"].lower() or q in cr["category"].lower() or q in cr["primary_university"].lower():
                 matched_courses.append(cr)
 
-        # Autonomous Discovery Trigger if No Match Found
-        autonomous_discovery = None
-        if not matched_univs and not matched_colleges and not matched_courses and len(q) > 3:
-            autonomous_discovery = self.trigger_autonomous_discovery(query)
-            if autonomous_discovery and autonomous_discovery.get("discovered_record"):
-                matched_colleges.append(autonomous_discovery["discovered_record"])
+        # Honest No-Match Handling: Never fabricate records or fake LEVEL_1 verification
+        research_suggestion = None
+        if not matched_univs and not matched_colleges and not matched_courses and len(q) > 2:
+            research_suggestion = {
+                "status": "NOT_CATALOGED_YET",
+                "query": query,
+                "message": f"No verified accredited record currently matches '{query}'.",
+                "can_queue_research": True,
+                "note": "EDUVA maintains strict verification standards. Uncataloged institutions require corroboration from University Affiliation Gazetteers or UGC Nepal before indexing."
+            }
 
         return {
             "query": query,
@@ -148,76 +152,35 @@ class LivingKnowledgeSystem:
             "universities": matched_univs[:10],
             "colleges": matched_colleges[:20],
             "courses": matched_courses[:10],
-            "autonomous_discovery": autonomous_discovery
+            "research_suggestion": research_suggestion,
+            "autonomous_discovery": None
         }
 
-    # Autonomous Discovery Pipeline (Simulation & Live Synthesis)
-    def trigger_autonomous_discovery(self, query: str) -> Dict[str, Any]:
+    # Honest Research Queue Dispatcher (Replaces Fake Synthesis)
+    def queue_unverified_research_task(self, query: str) -> Dict[str, Any]:
         """
-        Executes:
-        SEARCH -> LOCAL SEARCH -> NO RESULT -> RESEARCH AGENT -> SOURCE DISCOVERY ->
-        AI EXTRACTION -> VERIFICATION -> CONFIDENCE SCORING -> CREATE RECORD -> INDEX -> RETURN
+        Enqueues an authentic research task into the ResearchAgent pipeline
+        instead of fabricating data.
         """
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        words = query.strip().split()
-        clean_name = query.title()
-
-        # Deduce potential affiliation and program from search terms
-        q_lower = query.lower()
-        target_univ = "Tribhuvan University (TU)" if "tu" in q_lower or "tribhuvan" in q_lower else ("Kathmandu University" if "ku" in q_lower else "Pokhara University")
+        task_id = f"gap_res_{int(datetime.datetime.now().timestamp()*1000)}"
         
-        detected_prog = "BCA" if "bca" in q_lower else ("B.Sc. CSIT" if "csit" in q_lower else ("B.E. Computer" if "computer" in q_lower or "engineering" in q_lower else "BBA"))
-        detected_location = "Kathmandu" if "kathmandu" in q_lower else ("Lalitpur" if "lalitpur" in q_lower else ("Pokhara" if "pokhara" in q_lower else "Bagmati Province"))
-
-        discovered_college = {
-            "id": f"col_discovered_{len(self.colleges) + 1}",
-            "name": f"{clean_name.split()[0]} College of Higher Studies",
-            "aliases": [clean_name, f"{clean_name.split()[0]} College"],
-            "university": target_univ,
-            "ownership": "PRIVATE_AFFILIATED",
-            "location": f"{detected_location}, Nepal",
-            "district": "Kathmandu",
-            "province": "Bagmati Province",
-            "established_year": 2012,
-            "accreditation": "UGC Nepal QAA Process Registered",
-            "admission_status": "ADMISSION_OPEN",
-            "entrance_exam": f"{target_univ.split()[0]} Central Entrance",
-            "programs": [detected_prog, "BBA", "BBS"],
-            "fee_structure": {
-                detected_prog: "NPR 580,000 (4 Years Total)",
-                "BBA": "NPR 620,000 (4 Years Total)"
-            },
-            "scholarships_available": ["Merit Scholarship (Top 10% in Entrance)", "Underprivileged Quota"],
-            "official_website": f"https://www.{clean_name.split()[0].lower()}college.edu.np",
-            "contact": f"+977-1-44{len(self.colleges):04d}",
-            "verification_status": "VERIFIED_LEVEL_1",
-            "confidence_score": 0.94,
-            "source_metadata": {
-                "sourceId": f"src_discovered_{len(self.colleges) + 1}",
-                "sourceName": f"Official {target_univ.split()[0]} Affiliation Gazetteer & UGC Record",
-                "sourceUrl": "https://tribhuvan-university.edu.np/affiliated-colleges",
-                "authorityLevel": "LEVEL_1_AUTHORITATIVE",
-                "reliabilityScore": 0.94,
-                "lastVerifiedAt": timestamp
-            }
+        new_gap = {
+            "id": task_id,
+            "gap_type": "UNCATALOGED_INSTITUTION_QUERY",
+            "target_entity": query.strip(),
+            "details": f"User searched for '{query}'. Queued for autonomous verification via University Affiliation Gazetteers & MOEST portals.",
+            "priority": "HIGH",
+            "status": "QUEUED_FOR_AGENT_RESEARCH",
+            "detected_at": timestamp
         }
-
-        # Dynamically record into living knowledge database & search index
-        self.colleges.append(discovered_college)
+        self.knowledge_gaps.insert(0, new_gap)
 
         return {
-            "status": "DISCOVERED_AND_INDEXED",
+            "status": "QUEUED",
+            "task_id": task_id,
             "query": query,
-            "agent": "AutonomousEducationDiscoveryAgent",
-            "pipeline_steps": [
-                {"step": "LOCAL_SEARCH", "result": "NOT_FOUND"},
-                {"step": "SOURCE_DISCOVERY", "sources_evaluated": 5, "authority_level": "LEVEL_1_AUTHORITATIVE"},
-                {"step": "AI_EXTRACTION", "extracted_entities": ["College Name", "University Affiliation", "Programs", "Location", "Fee Range"]},
-                {"step": "VERIFICATION", "status": "VERIFIED_BY_OFFICIAL_REGISTRY"},
-                {"step": "CONFIDENCE_CALCULATION", "score": 0.94},
-                {"step": "KNOWLEDGE_GRAPH_INDEX", "status": "SUCCESSFULLY_INSERTED"}
-            ],
-            "discovered_record": discovered_college,
+            "message": f"Research task created for '{query}'. ResearchAgent will monitor accredited university notice boards to corroborate affiliation before indexing.",
             "timestamp": timestamp
         }
 

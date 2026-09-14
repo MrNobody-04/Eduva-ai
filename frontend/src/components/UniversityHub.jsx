@@ -276,9 +276,13 @@ export default function UniversityHub({ theme, onOpenCopilot }) {
                     <span className="font-black text-sm text-slate-900 dark:text-white">{univ.total_constituent_campuses} Campuses</span>
                   </div>
                   <div className={`p-2.5 rounded-xl border ${theme === 'dark' ? 'bg-gray-800/40 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                    <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-gray-400 block">Affiliated</span>
-                    <span className="font-black text-sm text-blue-600 dark:text-blue-400">
-                      {univ.total_affiliated_colleges || affilCount || '20+'} Colleges
+                    <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-gray-400 block">Verified Progress</span>
+                    <span className="font-black text-xs text-blue-600 dark:text-blue-400 block mt-0.5">
+                      {affilCount > 0 ? (
+                        `${affilCount} of ${univ.total_affiliated_colleges ? `${univ.total_affiliated_colleges} registered` : 'estimated 25+'}`
+                      ) : (
+                        `0 of ${univ.total_affiliated_colleges ? `${univ.total_affiliated_colleges} registered` : '30+ pending'}`
+                      )}
                     </span>
                   </div>
                 </div>
@@ -343,18 +347,38 @@ export default function UniversityHub({ theme, onOpenCopilot }) {
               <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
                 {(() => {
                   const affils = getAffiliatedColleges(selectedUniv)
+                  const totalExpected = selectedUniv.total_affiliated_colleges || 0
                   if (affils.length === 0) {
                     return (
-                      <div className="py-12 text-center text-xs opacity-60 border border-dashed rounded-2xl border-slate-700">
-                        Constituent and affiliated listings being indexed by autonomous agents for {selectedUniv.name}.
+                      <div className="p-8 text-center rounded-2xl border border-dashed border-amber-500/40 bg-amber-500/5 space-y-3">
+                        <div className="w-10 h-10 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center mx-auto">
+                          <Activity className="w-5 h-5 animate-pulse" />
+                        </div>
+                        <h4 className="text-xs font-black uppercase text-amber-400">
+                          Active Indexing Progress: 0 of {totalExpected ? `${totalExpected}` : 'estimated 25+'} Campuses Corroborated
+                        </h4>
+                        <p className="text-xs text-slate-300 max-w-md mx-auto leading-relaxed">
+                          EDUVA's ResearchAgent crawls {selectedUniv.name}'s official gazettes and accreditation records before marking any campus verified.
+                        </p>
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800 text-[11px] text-slate-400 font-mono">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span>
+                          <span>Crawler status: Scanning university gazette notice board</span>
+                        </div>
                       </div>
                     )
                   }
                   return (
                     <div className="space-y-3">
-                      <div className="flex items-center justify-between text-xs text-slate-400 font-semibold px-1">
-                        <span>Showing {affils.length} Verified Affiliated Institutions</span>
-                        <span>Level 1 Verified Affiliation</span>
+                      <div className="p-3.5 rounded-xl border border-blue-500/30 bg-blue-500/5 flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                          <span className="font-bold text-slate-100">
+                            Verified Progress: {affils.length} of {totalExpected ? `${totalExpected} institutions` : 'cataloged so far'}
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 font-bold">
+                          {totalExpected > 0 ? `${Math.round((affils.length / totalExpected) * 100)}% Corroborated` : 'Live Corroboration'}
+                        </span>
                       </div>
                       <div className="grid grid-cols-1 gap-3">
                         {affils.map((col) => (

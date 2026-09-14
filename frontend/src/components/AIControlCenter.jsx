@@ -14,36 +14,70 @@ export default function AIControlCenter({ theme }) {
   const [isSimulating, setIsSimulating] = useState(false)
   const [deadlineResult, setDeadlineResult] = useState(null)
 
-  const fetchTelemetry = async () => {
-    try {
-      const [resTel, resDb, resGemini] = await Promise.all([
-        fetch('/api/living-system/telemetry'),
-        fetch('/api/database/status'),
-        fetch('/api/gemini/status')
-      ])
-      if (resTel.ok) {
-        const data = await resTel.json()
-        setTelemetry(data)
-      }
-      if (resDb.ok) {
-        const dbData = await resDb.json()
-        setDbStatus(dbData)
-      }
-      if (resGemini.ok) {
-        const geminiData = await resGemini.json()
-        setGeminiStatus(geminiData)
-      }
-    } catch (err) {
-      console.error('Failed to load telemetry:', err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
+  // Connect to live /ws/telemetry WebSocket stream
   useEffect(() => {
-    fetchTelemetry()
-    const interval = setInterval(fetchTelemetry, 6000)
-    return () => clearInterval(interval)
+    // Initial fetch for database and gemini status
+    const fetchAuxiliaryStatus = async () => {
+      try {
+        const [resDb, resGemini] = await Promise.all([
+          fetch('/api/database/status'),
+          fetch('/api/gemini/status')
+        ])
+        if (resDb.ok) setDbStatus(await resDb.json())
+        if (resGemini.ok) setGeminiStatus(await resGemini.json())
+      } catch (err) {
+        console.warn('Status fetch error:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchAuxiliaryStatus()
+
+    // Establish WebSocket connection to /ws/telemetry
+    let ws = null
+    let reconnectTimeout = null
+
+    const connectTelemetryWS = () => {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+      const wsUrl = `${protocol}//${window.location.host}/ws/telemetry`
+
+      try {
+        ws = new WebSocket(wsUrl)
+        ws.onopen = () => {
+          setLoading(false)
+        }
+        ws.onmessage = (e) => {
+          try {
+            const data = JSON.parse(e.data)
+            if (data) {
+              setTelemetry(data)
+            }
+          } catch (err) {}
+        }
+        ws.onclose = () => {
+          if (!document.hidden) {
+            reconnectTimeout = setTimeout(connectTelemetryWS, 4000)
+          }
+        }
+      } catch (err) {
+        console.warn('Telemetry WS error:', err)
+      }
+    }
+
+    connectTelemetryWS()
+
+    const handleVisibility = () => {
+      if (!document.hidden && (!ws || ws.readyState === WebSocket.CLOSED)) {
+        connectTelemetryWS()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility)
+      if (reconnectTimeout) clearTimeout(reconnectTimeout)
+      if (ws) ws.close()
+    }
   }, [])
 
   const getHeaders = () => {

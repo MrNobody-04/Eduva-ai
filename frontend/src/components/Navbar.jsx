@@ -1,8 +1,8 @@
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { 
   Building2, GraduationCap, FileCheck2, Award, 
   Sun, Moon, Menu, X, Cpu, Search, Sparkles, BookOpen, 
-  GitCompare, Calendar, Bookmark, Flame, User, CheckCircle2, Shield, Zap
+  GitCompare, Calendar, Bookmark, Flame, User, CheckCircle2, Shield, Zap, ChevronDown
 } from 'lucide-react'
 
 export default function Navbar({ 
@@ -14,31 +14,46 @@ export default function Navbar({
   onOpenProfile
 }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isMoreOpen, setIsMoreOpen] = useState(false)
+  const moreRef = useRef(null)
 
-  const navItems = [
+  // Primary 5 Navigation Tabs
+  const primaryTabs = [
     { id: 'landing', label: 'Home' },
     { id: 'briefing', label: 'Dashboard' },
     { id: 'universities', label: 'Universities' },
-    { id: 'courses', label: 'Degrees' },
     { id: 'entrance', label: 'Entrance' },
-    { id: 'loksewa', label: 'Loksewa' },
-    { id: 'alerts', label: 'Alerts' },
-    { id: 'applications', label: 'Tracker' },
-    { id: 'saved', label: 'Saved' },
-    { id: 'admin', label: 'Admin', isSpecial: true }
+    { id: 'alerts', label: 'Alerts' }
+  ]
+
+  // Secondary Features grouped under "More"
+  const secondaryTabs = [
+    { id: 'courses', label: 'Degrees & Courses' },
+    { id: 'loksewa', label: 'Loksewa Radar' },
+    { id: 'applications', label: 'Application Tracker' },
+    { id: 'saved', label: 'Saved Items' },
+    { id: 'admin', label: 'Admin Console' }
   ]
 
   const handleTabClick = (id) => {
     setActiveTab(id)
     setIsMobileMenuOpen(false)
+    setIsMoreOpen(false)
   }
 
+  // Close More dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (moreRef.current && !moreRef.current.contains(e.target)) {
+        setIsMoreOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
   return (
-    <header className={`sticky top-0 z-40 backdrop-blur-2xl transition-all duration-300 border-b w-full ${
-      theme === 'dark' 
-        ? 'bg-[#080C14]/90 border-slate-800/80 shadow-2xl shadow-black/50 text-slate-100' 
-        : 'bg-white/90 border-slate-200/80 shadow-md shadow-slate-200/50 text-slate-800'
-    }`}>
+    <header className="sticky top-0 z-40 backdrop-blur-2xl transition-all duration-300 border-b w-full border-[var(--border-subtle)] bg-[var(--bg-main)]/90 text-[var(--text-primary)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-20">
           
@@ -48,10 +63,10 @@ export default function Navbar({
             onClick={() => handleTabClick('landing')}
           >
             <div className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-600 p-0.5 shadow-lg shadow-blue-500/25 group-hover:scale-105 transition-all">
-              <div className={`w-full h-full rounded-[14px] flex items-center justify-center ${theme === 'dark' ? 'bg-[#080C14]' : 'bg-white'}`}>
+              <div className="w-full h-full rounded-[14px] flex items-center justify-center bg-[var(--surface-1)]">
                 <Cpu className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400 animate-pulse" />
               </div>
-              <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-[#080C14] animate-ping"></span>
+              <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-[var(--bg-main)] animate-ping"></span>
             </div>
             <div>
               <div className="flex items-center space-x-2">
@@ -62,32 +77,64 @@ export default function Navbar({
                   Verified
                 </span>
               </div>
-              <p className={`text-[10px] font-semibold tracking-wide ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
+              <p className="text-[10px] font-semibold tracking-wide text-[var(--text-secondary)]">
                 Nepal Higher Education Intelligence
               </p>
             </div>
           </div>
 
-          {/* Desktop Navigation Tabs */}
-          <nav className={`hidden xl:flex items-center p-1 rounded-2xl border ${
-            theme === 'dark' ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-100 border-slate-200'
-          }`}>
-            {navItems.map((item) => {
+          {/* Streamlined Desktop Navigation Tabs (5 Primary + More dropdown) */}
+          <nav className="hidden lg:flex items-center p-1 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-1)]">
+            {primaryTabs.map((item) => {
               const isActive = activeTab === item.id
               return (
                 <button
                   key={item.id}
                   onClick={() => handleTabClick(item.id)}
-                  className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                  className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
                     isActive
                       ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
-                      : theme === 'dark' ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
+                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                   }`}
                 >
                   <span>{item.label}</span>
                 </button>
               )
             })}
+
+            {/* Accessible 'More' Dropdown */}
+            <div className="relative" ref={moreRef}>
+              <button
+                onClick={() => setIsMoreOpen(!isMoreOpen)}
+                className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1 ${
+                  secondaryTabs.some(t => t.id === activeTab)
+                    ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                }`}
+              >
+                <span>More</span>
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isMoreOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {isMoreOpen && (
+                <div className="absolute right-0 mt-2 w-52 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-1)] shadow-2xl p-1.5 space-y-1 animate-fadeIn z-50">
+                  {secondaryTabs.map((sub) => (
+                    <button
+                      key={sub.id}
+                      onClick={() => handleTabClick(sub.id)}
+                      className={`w-full text-left px-3 py-2 text-xs font-semibold rounded-xl transition-all flex items-center justify-between cursor-pointer ${
+                        activeTab === sub.id
+                          ? 'bg-blue-600 text-white'
+                          : 'text-[var(--text-secondary)] hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)]'
+                      }`}
+                    >
+                      <span>{sub.label}</span>
+                      {activeTab === sub.id && <CheckCircle2 className="w-3.5 h-3.5" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </nav>
 
           {/* Right Utility Controls */}
@@ -95,27 +142,21 @@ export default function Navbar({
             {/* Universal Search Quick Button */}
             <button
               onClick={onOpenSearch}
-              className={`flex items-center gap-2 px-3 py-1.5 sm:py-2 text-xs font-bold rounded-xl border transition-all cursor-pointer min-h-[40px] ${
-                theme === 'dark' 
-                  ? 'bg-slate-900/80 border-slate-800 text-slate-300 hover:border-blue-500/40' 
-                  : 'bg-slate-100 border-slate-200 text-slate-700 hover:border-blue-400'
-              }`}
+              className="flex items-center gap-2 px-3 py-1.5 sm:py-2 text-xs font-bold rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-1)] text-[var(--text-primary)] hover:border-blue-500/40 transition-all cursor-pointer min-h-[40px]"
               title="Global Universal Search (Ctrl+K)"
             >
               <Search className="w-3.5 h-3.5 text-blue-500" />
               <span className="hidden md:inline">Search...</span>
-              <kbd className="hidden md:inline text-[9px] px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700 font-mono text-slate-400">Ctrl K</kbd>
+              <kbd className="hidden md:inline text-[9px] px-1.5 py-0.5 bg-[var(--surface-2)] rounded border border-[var(--border-subtle)] font-mono text-[var(--text-muted)]">Ctrl K</kbd>
             </button>
 
             {/* Live Alerts Bell */}
             <button
               onClick={() => handleTabClick('alerts')}
-              className={`relative p-2.5 rounded-xl border transition-all cursor-pointer min-h-[40px] min-w-[40px] flex items-center justify-center ${
+              className={`relative p-2.5 rounded-xl border border-[var(--border-subtle)] transition-all cursor-pointer min-h-[40px] min-w-[40px] flex items-center justify-center ${
                 activeTab === 'alerts'
                   ? 'bg-rose-500/20 border-rose-500/40 text-rose-400'
-                  : theme === 'dark'
-                    ? 'bg-slate-900 border-slate-800 text-slate-300 hover:text-white hover:border-slate-700'
-                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100'
+                  : 'bg-[var(--surface-1)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
               title="National Safety & Campus Alerts"
             >
@@ -129,11 +170,7 @@ export default function Navbar({
             {/* Profile Button */}
             <button
               onClick={onOpenProfile}
-              className={`p-2 sm:px-3 sm:py-2 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer min-h-[40px] ${
-                theme === 'dark'
-                  ? 'bg-slate-900 border-slate-800 text-slate-300 hover:text-white hover:border-slate-700'
-                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100'
-              }`}
+              className="p-2 sm:px-3 sm:py-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-1)] text-[var(--text-primary)] hover:bg-[var(--surface-2)] text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer min-h-[40px]"
               title="Student Academic Profile"
             >
               <User className="w-4 h-4 text-blue-400" />
@@ -143,22 +180,17 @@ export default function Navbar({
             {/* Dark / Light Toggle */}
             <button
               onClick={toggleTheme}
-              className={`p-2.5 rounded-xl border transition-all cursor-pointer min-h-[40px] min-w-[40px] flex items-center justify-center ${
-                theme === 'dark'
-                  ? 'bg-slate-900 border-slate-800 text-amber-400 hover:bg-slate-800'
-                  : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'
-              }`}
+              className="p-2.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-1)] text-amber-400 hover:bg-[var(--surface-2)] transition-all cursor-pointer min-h-[40px] min-w-[40px] flex items-center justify-center"
               title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
             >
-              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4 text-slate-700" />}
             </button>
 
             {/* Mobile Hamburger Toggle */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className={`xl:hidden p-2.5 rounded-xl border transition-colors cursor-pointer min-h-[40px] min-w-[40px] flex items-center justify-center ${
-                theme === 'dark' ? 'bg-slate-900 border-slate-800 text-slate-200' : 'bg-slate-100 border-slate-200 text-slate-700'
-              }`}
+              className="lg:hidden p-2.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-1)] text-[var(--text-primary)] transition-colors cursor-pointer min-h-[40px] min-w-[40px] flex items-center justify-center"
+              aria-label="Toggle navigation menu"
             >
               {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -167,27 +199,58 @@ export default function Navbar({
         </div>
       </div>
 
-      {/* Mobile Drawer Menu */}
+      {/* Mobile Drawer Menu Organized by Category */}
       {isMobileMenuOpen && (
-        <div className={`xl:hidden border-t px-4 py-4 space-y-2 animate-fadeIn ${
-          theme === 'dark' ? 'bg-[#080C14] border-slate-800' : 'bg-white border-slate-200'
-        }`}>
-          {navItems.map((item) => {
-            const isActive = activeTab === item.id
-            return (
-              <button
-                key={item.id}
-                onClick={() => handleTabClick(item.id)}
-                className={`w-full text-left px-4 py-3 text-xs font-bold rounded-xl transition-all flex items-center justify-between cursor-pointer ${
-                  isActive
-                    ? 'bg-blue-600 text-white'
-                    : theme === 'dark' ? 'text-slate-300 hover:bg-slate-800/60' : 'text-slate-700 hover:bg-slate-100'
-                }`}
-              >
-                <span>{item.label}</span>
-              </button>
-            )
-          })}
+        <div className="lg:hidden border-t border-[var(--border-subtle)] bg-[var(--bg-main)] px-4 py-4 space-y-4 animate-fadeIn">
+          <div>
+            <span className="text-[10px] uppercase font-black tracking-wider text-[var(--text-muted)] block px-2 mb-1.5">
+              Primary Directory
+            </span>
+            <div className="space-y-1">
+              {primaryTabs.map((item) => {
+                const isActive = activeTab === item.id
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => handleTabClick(item.id)}
+                    className={`w-full text-left px-4 py-3 text-xs font-bold rounded-xl transition-all flex items-center justify-between min-h-[44px] cursor-pointer ${
+                      isActive
+                        ? 'bg-blue-600 text-white'
+                        : 'text-[var(--text-secondary)] hover:bg-[var(--surface-2)]'
+                    }`}
+                  >
+                    <span>{item.label}</span>
+                    {isActive && <CheckCircle2 className="w-4 h-4" />}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          <div className="pt-2 border-t border-[var(--border-subtle)]">
+            <span className="text-[10px] uppercase font-black tracking-wider text-[var(--text-muted)] block px-2 mb-1.5">
+              Student Utilities & Intelligence
+            </span>
+            <div className="space-y-1">
+              {secondaryTabs.map((item) => {
+                const isActive = activeTab === item.id
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => handleTabClick(item.id)}
+                    className={`w-full text-left px-4 py-3 text-xs font-bold rounded-xl transition-all flex items-center justify-between min-h-[44px] cursor-pointer ${
+                      isActive
+                        ? 'bg-blue-600 text-white'
+                        : 'text-[var(--text-secondary)] hover:bg-[var(--surface-2)]'
+                    }`}
+                  >
+                    <span>{item.label}</span>
+                    {isActive && <CheckCircle2 className="w-4 h-4" />}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
         </div>
       )}
     </header>

@@ -66,6 +66,7 @@ class OrchestratorAgent:
                 self.agent_telemetry["ResearchAgent"]["next_run"] = (now + datetime.timedelta(seconds=interval)).isoformat()
                 
                 await self.research_agent.run_discovery_cycle()
+                await self.research_agent.run_university_catalog_cycle()
                 self.cycle_count += 1
                 self.agent_telemetry["ResearchAgent"]["status"] = "HEALTHY"
             except Exception as e:

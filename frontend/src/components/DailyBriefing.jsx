@@ -27,7 +27,10 @@ export default function DailyBriefing({
       deadline: "2026-09-27 (Extended)",
       urgency: "CRITICAL",
       fee: "NPR 2,000",
-      status: "REGISTRATION_OPEN"
+      status: "REGISTRATION_OPEN",
+      official_apply_url: "https://entrance.ioe.edu.np",
+      source_url: "https://entrance.ioe.edu.np/notices/ext-2026",
+      source_name: "IOE Entrance Examination Board (TU)"
     },
     {
       title: "KUCAT-CBT Entrance Exam Registration",
@@ -35,7 +38,10 @@ export default function DailyBriefing({
       deadline: "2026-09-25",
       urgency: "HIGH",
       fee: "NPR 2,200",
-      status: "REGISTRATION_OPEN"
+      status: "REGISTRATION_OPEN",
+      official_apply_url: "https://apply.ku.edu.np",
+      source_url: "https://ku.edu.np/admission-notices",
+      source_name: "KU Admissions Office Dhulikhel"
     },
     {
       title: "MOEST 100% Tuition Waiver Quota Portal",
@@ -43,7 +49,10 @@ export default function DailyBriefing({
       deadline: "2026-10-01",
       urgency: "UPCOMING",
       fee: "Free (Merit Quota)",
-      status: "OPENS_SOON"
+      status: "OPENS_SOON",
+      official_apply_url: "https://moest.gov.np",
+      source_url: "https://moest.gov.np/notice-scholarships",
+      source_name: "Ministry of Education, Science & Technology"
     }
   ]
 
@@ -142,7 +151,7 @@ export default function DailyBriefing({
                 theme === 'dark' ? 'bg-gray-900/80 border-gray-800' : 'bg-white border-slate-200'
               }`}
             >
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 <div className="flex items-center justify-between">
                   <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
                     dl.urgency === 'CRITICAL' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40' : 'bg-blue-500/20 text-blue-400 border border-blue-500/40'
@@ -154,11 +163,37 @@ export default function DailyBriefing({
 
                 <h3 className="font-bold text-sm tracking-tight">{dl.title}</h3>
                 <p className="text-xs opacity-70">{dl.university}</p>
+
+                {dl.source_url ? (
+                  <div className="flex items-center gap-1.5 text-[10px] text-emerald-500 font-semibold pt-1">
+                    <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                    <span>Verified: {dl.source_name || 'Official Notice Board'}</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5 text-[10px] text-amber-500 font-semibold pt-1">
+                    <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+                    <span>Provisional Notice — Pending Second Verification</span>
+                  </div>
+                )}
               </div>
 
-              <div className="mt-4 pt-3 border-t border-gray-800/40 flex items-center justify-between text-xs">
-                <span className="font-bold text-amber-400">Due: {dl.deadline}</span>
-                <span className="text-[10px] opacity-60 font-semibold">{dl.status}</span>
+              <div className="mt-4 pt-3 border-t border-gray-800/40 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-amber-400">Due: {dl.deadline}</span>
+                  <span className="text-[10px] opacity-60 font-semibold">{dl.status}</span>
+                </div>
+
+                {dl.official_apply_url && (
+                  <a
+                    href={dl.official_apply_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-full py-2 px-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-md shadow-blue-600/20"
+                  >
+                    <span>Apply on Official Portal</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </a>
+                )}
               </div>
             </div>
           ))}

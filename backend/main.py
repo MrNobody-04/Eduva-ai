@@ -224,6 +224,19 @@ async def get_single_course(course_id: str):
 async def universal_search(q: str = Query(..., min_length=1)):
     return global_living_system.universal_search(q)
 
+class QueueResearchRequest(BaseModel):
+    query: str
+
+@app.post("/api/search/queue-research")
+async def queue_institution_research(req: QueueResearchRequest):
+    """
+    Allows users to trigger authentic background research by ResearchAgent
+    when an institution is not yet cataloged. Never creates fake verified data.
+    """
+    res = global_living_system.queue_unverified_research_task(req.query)
+    research_agent.add_research_task(f"Verify accreditation and affiliation for uncataloged search: {req.query}", priority="HIGH")
+    return res
+
 class EligibilityProfileRequest(BaseModel):
     stream: str = "SCIENCE"
     gpa: float = 3.85
@@ -826,6 +839,63 @@ async def update_resource_endpoint(
 
     success = global_db.update_uploaded_resource(resource_id, updates)
     return {"status": "SUCCESS" if success else "FAILED"}
+
+class AgentIngestResourceRequest(BaseModel):
+    title: str
+    category: str = "ACADEMIC_NOTICE"
+    authority_level: str = "LEVEL_1_AUTHORITATIVE"
+    source_url: str
+    institution: Optional[str] = ""
+    description: Optional[str] = ""
+
+@app.post("/api/internal/agent/resources/ingest", dependencies=[Depends(verify_admin_key)])
+async def agent_ingest_resource(req: AgentIngestResourceRequest):
+    """
+    Internal-only ingestion path for autonomous ResearchAgent to ingest discovered resources.
+    Routes through Autonomous Confidence Gate:
+    - If corroborated by 2+ Level-1 sources, automatically published.
+    - If single source, labeled PROVISIONAL and queued for verification.
+    """
+    res_eval = global_security_gate.evaluate_autonomous_confidence(
+        claim_id=f"ingest_{req.title[:20]}",
+        sources=[{"sourceUrl": req.source_url, "authorityLevel": req.authority_level}],
+        confidence_score=0.95
+    )
+
+    resource_id = f"res_auto_{uuid.uuid4().hex[:8]}"
+    meta = {
+        "id": resource_id,
+        "title": req.title,
+        "filename": "autonomous_ingest_stream",
+        "original_filename": req.source_url.split("/")[-1] or "notice.html",
+        "category": req.category,
+        "authority_level": req.authority_level,
+        "institution": req.institution or "Nepal Education Board",
+        "year": 2026,
+        "description": req.description or f"Autonomously scraped from {req.source_url}",
+        "status": "ACTIVE" if res_eval["status"] == "AUTO_PUBLISHED" else "PROVISIONAL",
+        "risk_level": "LOW" if res_eval["status"] == "AUTO_PUBLISHED" else "MEDIUM"
+    }
+
+    global_db.insert_uploaded_resource(meta)
+
+    # Broadcast notification to clients
+    await global_notification_broadcaster.broadcast({
+        "event": "RESOURCE_INGESTED_AUTONOMOUSLY",
+        "data": {
+            "title": req.title,
+            "category": req.category,
+            "status": meta["status"],
+            "verification_label": res_eval["label"],
+            "source_url": req.source_url
+        }
+    })
+
+    return {
+        "status": "SUCCESS",
+        "resource": meta,
+        "confidence_evaluation": res_eval
+    }
 
 
 class ChatRequest(BaseModel):

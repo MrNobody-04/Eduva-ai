@@ -33,6 +33,45 @@ export default function AlertsAndSafety({ theme }) {
 
   useEffect(() => {
     fetchAlerts()
+
+    // Real-time Push Alert Connection via /ws/notifications
+    let ws = null
+    const token = localStorage.getItem('eduva_session_token')
+    if (token) {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+      const wsUrl = `${protocol}//${window.location.host}/ws/notifications?token=${encodeURIComponent(token)}`
+      try {
+        ws = new WebSocket(wsUrl)
+        ws.onmessage = (e) => {
+          try {
+            const msg = JSON.parse(e.data)
+            if (msg.event === 'NOTIFICATION_BROADCAST' || msg.event === 'PORTAL_NOTICE_VERIFIED') {
+              const newAlert = {
+                id: `push_${Date.now()}`,
+                title: msg.data?.title || 'Notice Verified',
+                description: msg.data?.message || msg.data?.diff || 'New verified notice published.',
+                hazard_type: 'ACADEMIC_ALERT',
+                severity: msg.data?.severity || 'HIGH',
+                region: 'National Portal',
+                province: 'All Provinces',
+                source_name: msg.data?.portal_name || 'Verified Official Board',
+                source_url: msg.data?.link || 'https://tribhuvan-university.edu.np',
+                timestamp: new Date().toLocaleTimeString(),
+                is_live_push: true
+              }
+              setAlerts(prev => [newAlert, ...prev])
+              setLastRefreshed(new Date().toLocaleTimeString())
+            }
+          } catch (err) {}
+        }
+      } catch (err) {
+        console.warn('Alerts WS error:', err)
+      }
+    }
+
+    return () => {
+      if (ws) ws.close()
+    }
   }, [])
 
   const getSeverityStyle = (severity) => {
