@@ -14,6 +14,13 @@ class ResearchAgent:
             {"id": "rq_3", "task": "Resolve knowledge gap for Pokhara University hostel fees", "priority": "LOW", "status": "QUEUED"},
             {"id": "rq_4", "task": "Corroborate KUCAT computer-based test shift schedule", "priority": "HIGH", "status": "QUEUED"}
         ]
+        self.event_bus.subscribe("PORTAL_CHANGE_DETECTED", self.handle_portal_change)
+
+    async def handle_portal_change(self, event: EduvaEvent):
+        pname = event.data.get("portal_name", "Official Portal")
+        url = event.data.get("url", "")
+        task_title = f"Analyze content mutation on {pname} ({url})"
+        self.add_research_task(task_title, priority="HIGH")
 
     async def run_discovery_cycle(self):
         # Scan for open knowledge gaps and add to research queue

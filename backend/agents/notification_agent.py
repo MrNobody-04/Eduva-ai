@@ -4,6 +4,8 @@ from engine.event_bus import EventBus, EduvaEvent
 from engine.knowledge_graph import KnowledgeGraph
 from engine.impact_analyzer import ImpactAnalyzer
 
+from engine.notification_stream import global_notification_broadcaster
+
 class NotificationItem:
     def __init__(self, id: str, student_id: str, title: str, message: str, category: str, urgency: str = "MEDIUM"):
         self.id = id
@@ -14,6 +16,7 @@ class NotificationItem:
         self.urgency = urgency  # LOW, MEDIUM, HIGH, CRITICAL
         self.timestamp = datetime.datetime.now().isoformat()
         self.is_read = False
+        self.is_broadcast = False
 
     def to_dict(self):
         return {
@@ -55,6 +58,35 @@ class NotificationAgent:
         # Subscribe to event bus
         self.event_bus.subscribe("ADMISSION_DEADLINE_CHANGED", self.handle_deadline_change)
         self.event_bus.subscribe("SCHOLARSHIP_FOUND", self.handle_scholarship_found)
+        self.event_bus.subscribe("PORTAL_NOTICE_VERIFIED", self.handle_portal_notice_verified)
+
+    async def handle_portal_notice_verified(self, event: EduvaEvent):
+        pname = event.data.get("portal_name", "Official Portal")
+        url = event.data.get("url", "")
+        notif = NotificationItem(
+            id=f"notif_{int(datetime.datetime.now().timestamp()*1000)}",
+            student_id="all",
+            title=f"🚨 Official Notice Verified: {pname}",
+            message=f"Autonomous monitor verified a published notice on {pname}. Check portal for details.",
+            category="SYSTEM",
+            urgency="HIGH"
+        )
+        self.notifications.insert(0, notif)
+        # Immediate real-time WebSocket push
+        await global_notification_broadcaster.broadcast({
+            "type": "NEW_ALERT",
+            "notification": notif.to_dict()
+        })
+
+    async def drain_queued_alerts(self):
+        # Drains pending unbroadcast alerts
+        unbroadcast = [n for n in self.notifications if not getattr(n, 'is_broadcast', False)]
+        for notif in unbroadcast[:5]:
+            notif.is_broadcast = True
+            await global_notification_broadcaster.broadcast({
+                "type": "NEW_ALERT",
+                "notification": notif.to_dict()
+            })
 
     async def handle_deadline_change(self, event: EduvaEvent):
         prog_id = event.data.get("program_id")

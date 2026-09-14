@@ -24,7 +24,8 @@ export default function Navbar({
     { id: 'loksewa', label: 'Loksewa' },
     { id: 'alerts', label: 'Alerts' },
     { id: 'applications', label: 'Tracker' },
-    { id: 'saved', label: 'Saved' }
+    { id: 'saved', label: 'Saved' },
+    { id: 'admin', label: 'Admin', isSpecial: true }
   ]
 
   const handleTabClick = (id) => {
@@ -94,7 +95,7 @@ export default function Navbar({
             {/* Universal Search Quick Button */}
             <button
               onClick={onOpenSearch}
-              className={`flex items-center gap-2 px-3 py-1.5 sm:py-2 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
+              className={`flex items-center gap-2 px-3 py-1.5 sm:py-2 text-xs font-bold rounded-xl border transition-all cursor-pointer min-h-[40px] ${
                 theme === 'dark' 
                   ? 'bg-slate-900/80 border-slate-800 text-slate-300 hover:border-blue-500/40' 
                   : 'bg-slate-100 border-slate-200 text-slate-700 hover:border-blue-400'
@@ -106,10 +107,29 @@ export default function Navbar({
               <kbd className="hidden md:inline text-[9px] px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700 font-mono text-slate-400">Ctrl K</kbd>
             </button>
 
+            {/* Live Alerts Bell */}
+            <button
+              onClick={() => handleTabClick('alerts')}
+              className={`relative p-2.5 rounded-xl border transition-all cursor-pointer min-h-[40px] min-w-[40px] flex items-center justify-center ${
+                activeTab === 'alerts'
+                  ? 'bg-rose-500/20 border-rose-500/40 text-rose-400'
+                  : theme === 'dark'
+                    ? 'bg-slate-900 border-slate-800 text-slate-300 hover:text-white hover:border-slate-700'
+                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100'
+              }`}
+              title="National Safety & Campus Alerts"
+            >
+              <Flame className="w-4 h-4 text-rose-500 animate-pulse" />
+              <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-rose-500 text-[8px] text-white font-black items-center justify-center">!</span>
+              </span>
+            </button>
+
             {/* Profile Button */}
             <button
               onClick={onOpenProfile}
-              className={`p-2 sm:px-3 sm:py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+              className={`p-2 sm:px-3 sm:py-2 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer min-h-[40px] ${
                 theme === 'dark'
                   ? 'bg-slate-900 border-slate-800 text-slate-300 hover:text-white hover:border-slate-700'
                   : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100'
@@ -123,7 +143,7 @@ export default function Navbar({
             {/* Dark / Light Toggle */}
             <button
               onClick={toggleTheme}
-              className={`p-2.5 rounded-xl border transition-all cursor-pointer ${
+              className={`p-2.5 rounded-xl border transition-all cursor-pointer min-h-[40px] min-w-[40px] flex items-center justify-center ${
                 theme === 'dark'
                   ? 'bg-slate-900 border-slate-800 text-amber-400 hover:bg-slate-800'
                   : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'
@@ -136,7 +156,7 @@ export default function Navbar({
             {/* Mobile Hamburger Toggle */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className={`xl:hidden p-2.5 rounded-xl border transition-colors cursor-pointer ${
+              className={`xl:hidden p-2.5 rounded-xl border transition-colors cursor-pointer min-h-[40px] min-w-[40px] flex items-center justify-center ${
                 theme === 'dark' ? 'bg-slate-900 border-slate-800 text-slate-200' : 'bg-slate-100 border-slate-200 text-slate-700'
               }`}
             >

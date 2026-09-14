@@ -10,6 +10,32 @@ class VerificationAgent:
         self.kg = kg
         self.verified_count = 14
         self.rejected_count = 1
+        self.event_bus.subscribe("PORTAL_CHANGE_DETECTED", self.handle_portal_change)
+
+    async def handle_portal_change(self, event: EduvaEvent):
+        url = event.data.get("url", "")
+        pname = event.data.get("portal_name", "Official Portal")
+        trust = SourceTrustEvaluator.evaluate_source(url=url, domain_type="OFFICIAL_PORTAL")
+        if trust["reliability_score"] >= 0.80:
+            self.verified_count += 1
+            verified_data = {
+                **event.data,
+                "verification_status": "VERIFIED",
+                "trust_tier": trust["trust_tier"],
+                "confidence": trust["reliability_score"]
+            }
+            await self.event_bus.publish(EduvaEvent(
+                event_type="PORTAL_NOTICE_VERIFIED",
+                agent_source=self.name,
+                confidence=trust["reliability_score"],
+                data=verified_data
+            ))
+
+    async def process_pending_queue(self):
+        # Periodically audit open knowledge gaps
+        pending_gaps = [g for g in self.kg.knowledge_gaps.values() if g.status == "OPEN"]
+        for gap in pending_gaps[:3]:
+            gap.status = "VERIFYING"
 
     def verify_candidate_update(self, source_id: str, change_data: Dict[str, Any]) -> Dict[str, Any]:
         source = self.kg.sources.get(source_id)

@@ -1,8 +1,11 @@
 import asyncio
 import json
+import os
+import shutil
+import uuid
 from contextlib import asynccontextmanager
 from typing import Dict, List, Any, Optional
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Query
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Query, UploadFile, File, Form, Depends, Request, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -24,7 +27,9 @@ from engine.living_knowledge_system import global_living_system
 from engine.eligibility_engine import global_eligibility_engine
 from engine.comparison_engine import global_comparison_engine
 from engine.gemini_service import global_gemini_service
-
+from engine.auth import verify_admin_key, create_session_token, verify_session_token, get_authenticated_session, verify_ws_session
+from engine.rate_limiter import limiter, check_ws_rate_limit, RateLimitExceeded, _rate_limit_exceeded_handler
+from engine.notification_stream import global_notification_broadcaster
 
 from agents.research_agent import ResearchAgent
 from agents.verification_agent import VerificationAgent
@@ -77,14 +82,23 @@ async def lifespan(app: FastAPI):
     monitor_task.cancel()
 
 app = FastAPI(title="EDUVA AI - Autonomous Education & University Intelligence", lifespan=lifespan)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# 1. LOCK DOWN CORS: Explicit allowlist from ALLOWED_ORIGINS env var, never combining credentials with wildcard
+raw_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,https://eduva-ai.vercel.app")
+allowed_origins = [o.strip() for o in raw_origins.split(",") if o.strip()]
+has_wildcard = "*" in allowed_origins
+allow_credentials = not has_wildcard and len(allowed_origins) > 0
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_origins=allowed_origins if not has_wildcard else ["*"],
+    allow_credentials=allow_credentials,
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
+
 
 # 2. Endpoints
 @app.get("/api/status")
@@ -100,6 +114,23 @@ async def get_database_status():
 @app.get("/api/gemini/status")
 async def get_gemini_status():
     return global_gemini_service.get_status()
+
+# --- Cryptographic Student Session Authentication ---
+class SessionInitRequest(BaseModel):
+    session_id: Optional[str] = None
+    student_id: Optional[str] = "student_user"
+
+@app.post("/api/auth/session")
+async def create_or_refresh_session(req: SessionInitRequest):
+    sess_id = req.session_id or f"sess_{uuid.uuid4().hex[:12]}"
+    std_id = req.student_id or "student_user"
+    token = create_session_token(sess_id, std_id)
+    return {
+        "status": "SUCCESS",
+        "session_id": sess_id,
+        "student_id": std_id,
+        "token": token
+    }
 
 
 
@@ -228,7 +259,11 @@ async def get_living_system_telemetry():
 class DiscoverySimRequest(BaseModel):
     query: str = "ABC College BCA Kathmandu"
 
-@app.post("/api/living-system/simulate-discovery")
+# ==============================================================================
+# DEV/DEMO-ONLY: Gated strictly behind ADMIN_API_KEY. Never call in production
+# without authorized administrative credentials.
+# ==============================================================================
+@app.post("/api/living-system/simulate-discovery", dependencies=[Depends(verify_admin_key)])
 async def simulate_autonomous_discovery(req: DiscoverySimRequest):
     return global_living_system.trigger_autonomous_discovery(req.query)
 
@@ -236,7 +271,11 @@ class DeadlineChangeSimRequest(BaseModel):
     entity_id: str = "prog_ioe_be_comp"
     new_deadline: str = "2026-09-27"
 
-@app.post("/api/living-system/simulate-deadline-change")
+# ==============================================================================
+# DEV/DEMO-ONLY: Gated strictly behind ADMIN_API_KEY. Never call in production
+# without authorized administrative credentials.
+# ==============================================================================
+@app.post("/api/living-system/simulate-deadline-change", dependencies=[Depends(verify_admin_key)])
 async def simulate_deadline_semantic_change(req: DeadlineChangeSimRequest):
     return global_living_system.process_semantic_change(
         entity_id=req.entity_id,
@@ -294,8 +333,12 @@ async def get_entrance_exam_detail(exam_id: str):
 
 # --- Student Applications Endpoints ---
 @app.get("/api/applications")
-async def get_student_applications(student_id: str = "std_sujan_01"):
-    return global_db.get_applications(student_id)
+async def get_student_applications(
+    student_id: str = "std_sujan_01",
+    session: Dict[str, str] = Depends(get_authenticated_session)
+):
+    active_student_id = session.get("student_id") or student_id
+    return global_db.get_applications(active_student_id)
 
 class NewApplicationRequest(BaseModel):
     university_name: str
@@ -307,23 +350,36 @@ class NewApplicationRequest(BaseModel):
     documents_json: Optional[Dict[str, Any]] = None
 
 @app.post("/api/applications")
-async def create_student_application(req: NewApplicationRequest, student_id: str = "std_sujan_01"):
+async def create_student_application(
+    req: NewApplicationRequest,
+    student_id: str = "std_sujan_01",
+    session: Dict[str, str] = Depends(get_authenticated_session)
+):
+    active_student_id = session.get("student_id") or student_id
     data = req.model_dump()
-    data["student_id"] = student_id
+    data["student_id"] = active_student_id
     return global_db.add_application(data)
 
 class UpdateAppStatusRequest(BaseModel):
     status: str
 
 @app.patch("/api/applications/{app_id}")
-async def patch_application_status(app_id: str, req: UpdateAppStatusRequest):
+async def patch_application_status(
+    app_id: str,
+    req: UpdateAppStatusRequest,
+    session: Dict[str, str] = Depends(get_authenticated_session)
+):
     success = global_db.update_application_status(app_id, req.status)
     return {"status": "SUCCESS" if success else "FAILED"}
 
 # --- Saved Items Endpoints ---
 @app.get("/api/saved")
-async def get_saved_items(student_id: str = "std_sujan_01"):
-    return global_db.get_saved_items(student_id)
+async def get_saved_items(
+    student_id: str = "std_sujan_01",
+    session: Dict[str, str] = Depends(get_authenticated_session)
+):
+    active_student_id = session.get("student_id") or student_id
+    return global_db.get_saved_items(active_student_id)
 
 class ToggleSavedRequest(BaseModel):
     item_type: str
@@ -333,9 +389,14 @@ class ToggleSavedRequest(BaseModel):
     item_data: Optional[Dict[str, Any]] = None
 
 @app.post("/api/saved/toggle")
-async def toggle_save_item(req: ToggleSavedRequest, student_id: str = "std_sujan_01"):
+async def toggle_save_item(
+    req: ToggleSavedRequest,
+    student_id: str = "std_sujan_01",
+    session: Dict[str, str] = Depends(get_authenticated_session)
+):
+    active_student_id = session.get("student_id") or student_id
     return global_db.toggle_saved_item(
-        student_id=student_id,
+        student_id=active_student_id,
         item_type=req.item_type,
         item_id=req.item_id,
         item_title=req.item_title,
@@ -454,8 +515,12 @@ async def get_all_alerts():
 
 # --- Student Profile Endpoints ---
 @app.get("/api/profile")
-async def get_user_profile(student_id: str = "std_sujan_01"):
-    return global_db.get_profile(student_id)
+async def get_user_profile(
+    student_id: str = "std_sujan_01",
+    session: Dict[str, str] = Depends(get_authenticated_session)
+):
+    active_student_id = session.get("student_id") or student_id
+    return global_db.get_profile(active_student_id)
 
 class UpdateProfileRequest(BaseModel):
     name: Optional[str] = ""
@@ -470,8 +535,13 @@ class UpdateProfileRequest(BaseModel):
     scholarship_interest: Optional[bool] = True
 
 @app.post("/api/profile")
-async def update_user_profile(req: UpdateProfileRequest, student_id: str = "student_user"):
-    return global_db.update_profile(student_id, req.model_dump())
+async def update_user_profile(
+    req: UpdateProfileRequest,
+    student_id: str = "student_user",
+    session: Dict[str, str] = Depends(get_authenticated_session)
+):
+    active_student_id = session.get("student_id") or student_id
+    return global_db.update_profile(active_student_id, req.model_dump())
 
 # --- AI Comparative Synthesis ---
 class CompareAIRequest(BaseModel):
@@ -480,7 +550,8 @@ class CompareAIRequest(BaseModel):
     question: Optional[str] = "Which of these is better for someone on a limited budget?"
 
 @app.post("/api/compare/ai-analysis")
-async def analyze_comparison_with_ai(req: CompareAIRequest):
+@limiter.limit("15/minute")
+async def analyze_comparison_with_ai(request: Request, req: CompareAIRequest):
     entities = []
     if req.comparison_type.upper() == "UNIVERSITIES":
         all_u = get_all_nepal_universities()
@@ -508,15 +579,15 @@ async def analyze_comparison_with_ai(req: CompareAIRequest):
         "source": "EDUVA AI Comparative Reasoning Engine"
     }
 
-# --- Admin Verification Queue ---
-@app.get("/api/admin/verification-queue")
+# --- Admin Verification Queue (Protected by verify_admin_key) ---
+@app.get("/api/admin/verification-queue", dependencies=[Depends(verify_admin_key)])
 async def get_admin_verification_queue():
     return global_db.get_verification_queue()
 
 class ResolveVerificationRequest(BaseModel):
     action: str = "APPROVE"
 
-@app.post("/api/admin/verification-queue/{item_id}/resolve")
+@app.post("/api/admin/verification-queue/{item_id}/resolve", dependencies=[Depends(verify_admin_key)])
 async def resolve_admin_queue_item(item_id: str, req: ResolveVerificationRequest):
     success = global_db.resolve_verification_item(item_id, req.action)
     return {"status": "SUCCESS" if success else "FAILED"}
@@ -550,7 +621,8 @@ class SopDraftRequest(BaseModel):
     financial_need: Optional[str] = ""
 
 @app.post("/api/draft-document")
-async def draft_academic_document(req: SopDraftRequest):
+@limiter.limit("10/minute")
+async def draft_academic_document(request: Request, req: SopDraftRequest):
     return global_sop_drafter.generate_document(
         doc_type=req.doc_type,
         student_name=req.student_name,
@@ -561,11 +633,11 @@ async def draft_academic_document(req: SopDraftRequest):
         financial_need=req.financial_need or ""
     )
 
-@app.get("/api/audit-trail")
+@app.get("/api/audit-trail", dependencies=[Depends(verify_admin_key)])
 async def get_audit_trail():
     return global_security_gate.get_audit_trail(40)
 
-@app.get("/api/pending-approvals")
+@app.get("/api/pending-approvals", dependencies=[Depends(verify_admin_key)])
 async def get_pending_approvals():
     return global_security_gate.get_pending_approvals()
 
@@ -573,7 +645,7 @@ class ApprovalResolveRequest(BaseModel):
     approval_id: str
     approved: bool
 
-@app.post("/api/approvals/resolve")
+@app.post("/api/approvals/resolve", dependencies=[Depends(verify_admin_key)])
 async def resolve_approval(req: ApprovalResolveRequest):
     success = global_security_gate.resolve_approval(req.approval_id, req.approved)
     return {"success": success}
@@ -582,8 +654,13 @@ class SimulateEventRequest(BaseModel):
     event_type: str
     new_value: Optional[str] = None
 
-@app.post("/api/simulate-event")
+@app.post("/api/simulate-event", dependencies=[Depends(verify_admin_key)])
 async def simulate_real_world_event(req: SimulateEventRequest):
+    """
+    [ADMIN / DEMO ONLY]
+    Simulates real-world mutations like deadline extensions, newly announced grants,
+    or autonomous application dispatch. Protected by ADMIN_API_KEY.
+    """
     if req.event_type == "IOE_DEADLINE_EXTENDED":
         new_date = req.new_value or "2026-10-25"
         res = await admission_agent.process_observed_program_notice(
@@ -629,6 +706,128 @@ async def simulate_real_world_event(req: SimulateEventRequest):
 
     return {"status": "UNKNOWN_EVENT"}
 
+# --- Resource Upload & Update Endpoints (Protected by verify_admin_key) ---
+UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "data", "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+@app.get("/api/admin/resources", dependencies=[Depends(verify_admin_key)])
+async def get_all_uploaded_resources():
+    return global_db.get_uploaded_resources()
+
+@app.post("/api/admin/resources/upload", dependencies=[Depends(verify_admin_key)])
+async def upload_resource(
+    file: UploadFile = File(...),
+    title: str = Form(...),
+    category: str = Form("ACADEMIC_NOTICE"),
+    authority_level: str = Form("LEVEL_2_AFFILIATED"),
+    institution: Optional[str] = Form(""),
+    year: Optional[int] = Form(2026),
+    description: Optional[str] = Form("")
+):
+    resource_id = f"res_{uuid.uuid4().hex[:10]}"
+    safe_filename = f"{resource_id}_{file.filename.replace(' ', '_')}"
+    file_path = os.path.join(UPLOAD_DIR, safe_filename)
+
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    # Determine risk level based on authority claim
+    risk_level = "LOW"
+    status = "ACTIVE"
+    if authority_level in ["LEVEL_1_AUTHORITATIVE", "OFFICIAL_GAZETTE"]:
+        risk_level = "HIGH"
+        gate_res = global_security_gate.evaluate_and_record_action(
+            agent="AdminResourceVault",
+            reason=f"Authoritative document upload: {title}",
+            action_type="UPLOAD_AUTHORITATIVE_RESOURCE",
+            risk_level="HIGH",
+            student_id="admin_system",
+            payload={"filename": file.filename, "institution": institution}
+        )
+        if gate_res.get("decision") == "ESCALATED_TO_HUMAN":
+            status = "PENDING_APPROVAL"
+
+    meta = {
+        "id": resource_id,
+        "title": title,
+        "filename": safe_filename,
+        "original_filename": file.filename,
+        "category": category,
+        "authority_level": authority_level,
+        "institution": institution or "",
+        "year": year or 2026,
+        "description": description or "",
+        "status": status,
+        "risk_level": risk_level
+    }
+    
+    global_db.insert_uploaded_resource(meta)
+
+    # Notify research & verification agents of new verified resource document
+    if status == "ACTIVE":
+        await global_event_bus.publish(EduvaEvent(
+            event_type="PORTAL_CHANGE_DETECTED",
+            agent_source="ResourceUploadPipeline",
+            confidence=0.98,
+            data={
+                "portal_id": f"upload_{resource_id}",
+                "portal_name": institution or title,
+                "diff": f"New official document uploaded: {title} ({category})",
+                "authority_level": authority_level,
+                "resource_id": resource_id
+            }
+        ))
+
+    return {
+        "status": "SUCCESS",
+        "resource": meta,
+        "requires_approval": status == "PENDING_APPROVAL"
+    }
+
+@app.post("/api/admin/resources/{resource_id}", dependencies=[Depends(verify_admin_key)])
+async def update_resource_endpoint(
+    resource_id: str,
+    file: Optional[UploadFile] = File(None),
+    title: Optional[str] = Form(None),
+    category: Optional[str] = Form(None),
+    authority_level: Optional[str] = Form(None),
+    institution: Optional[str] = Form(None),
+    year: Optional[int] = Form(None),
+    description: Optional[str] = Form(None),
+    status: Optional[str] = Form(None)
+):
+    existing = global_db.get_uploaded_resource_by_id(resource_id)
+    if not existing:
+        raise HTTPException(status_code=404, detail="Resource not found")
+
+    updates: Dict[str, Any] = {}
+    if title is not None:
+        updates["title"] = title
+    if category is not None:
+        updates["category"] = category
+    if authority_level is not None:
+        updates["authority_level"] = authority_level
+    if institution is not None:
+        updates["institution"] = institution
+    if year is not None:
+        updates["year"] = year
+    if description is not None:
+        updates["description"] = description
+    if status is not None:
+        updates["status"] = status
+
+    if file:
+        safe_filename = f"{resource_id}_{file.filename.replace(' ', '_')}"
+        file_path = os.path.join(UPLOAD_DIR, safe_filename)
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        updates["filename"] = safe_filename
+        updates["original_filename"] = file.filename
+
+    success = global_db.update_uploaded_resource(resource_id, updates)
+    return {"status": "SUCCESS" if success else "FAILED"}
+
+
 class ChatRequest(BaseModel):
     query: str
     student_id: Optional[str] = "student_user"
@@ -636,27 +835,50 @@ class ChatRequest(BaseModel):
     is_voice: Optional[bool] = False
 
 @app.post("/api/copilot/chat")
-async def copilot_chat(req: ChatRequest):
+@limiter.limit("20/minute")
+async def copilot_chat(
+    request: Request,
+    req: ChatRequest,
+    session: Dict[str, str] = Depends(get_authenticated_session)
+):
+    # Enforce ownership: use authenticated student/session ID
+    active_session_id = session.get("session_id") or req.session_id or "default_session"
+    active_student_id = session.get("student_id") or req.student_id or "student_user"
+    
     return await copilot_agent.answer_query(
         user_query=req.query,
-        student_id=req.student_id or "student_user",
-        session_id=req.session_id or "default_session",
+        student_id=active_student_id,
+        session_id=active_session_id,
         is_voice=req.is_voice or False
     )
 
 @app.get("/api/chat/history")
-async def get_chat_history(session_id: str = "default_session"):
-    return global_db.get_chat_history(session_id)
+async def get_chat_history(
+    session_id: str = "default_session",
+    session: Dict[str, str] = Depends(get_authenticated_session)
+):
+    active_session_id = session.get("session_id") or session_id
+    return global_db.get_chat_history(active_session_id)
 
 @app.delete("/api/chat/history")
 @app.delete("/api/copilot/history")
-async def delete_chat_history(session_id: str = "default_session"):
-    global_db.delete_chat_history(session_id)
-    copilot_agent.clear_session(session_id)
-    return {"status": "success", "message": f"Session {session_id} history deleted"}
+async def delete_chat_history(
+    session_id: str = "default_session",
+    session: Dict[str, str] = Depends(get_authenticated_session)
+):
+    active_session_id = session.get("session_id") or session_id
+    global_db.delete_chat_history(active_session_id)
+    copilot_agent.clear_session(active_session_id)
+    return {"status": "success", "message": f"Session {active_session_id} history deleted"}
 
 @app.websocket("/ws/telemetry")
 async def websocket_telemetry(websocket: WebSocket):
+    # Throttle WS connection attempts
+    client_ip = websocket.client.host if websocket.client else "unknown"
+    if not check_ws_rate_limit(client_ip):
+        await websocket.close(code=1008, reason="Rate limit exceeded")
+        return
+
     await websocket.accept()
     try:
         while True:
@@ -666,4 +888,38 @@ async def websocket_telemetry(websocket: WebSocket):
     except WebSocketDisconnect:
         pass
     except Exception as e:
-        print(f"WebSocket error: {e}")
+        pass
+
+@app.websocket("/ws/notifications")
+async def websocket_notifications(
+    websocket: WebSocket,
+    token: Optional[str] = Query(None)
+):
+    """
+    Push-based WebSocket connection for real-time alerts and notifications.
+    Verifies HMAC session token and throttles incoming handshakes.
+    """
+    client_ip = websocket.client.host if websocket.client else "unknown"
+    if not check_ws_rate_limit(client_ip):
+        await websocket.close(code=1008, reason="Rate limit exceeded")
+        return
+
+    session = verify_ws_session(token)
+    if not session:
+        await websocket.close(code=1008, reason="Invalid or missing session token")
+        return
+
+    student_id = session.get("student_id", "student_user")
+    await global_notification_broadcaster.connect(websocket, student_id)
+    try:
+        # Keep socket open and process any incoming ping/ack messages
+        while True:
+            data = await websocket.receive_text()
+            # Respond to client heartbeat
+            if data == "ping":
+                await websocket.send_text("pong")
+    except WebSocketDisconnect:
+        global_notification_broadcaster.disconnect(websocket, student_id)
+    except Exception:
+        global_notification_broadcaster.disconnect(websocket, student_id)
+

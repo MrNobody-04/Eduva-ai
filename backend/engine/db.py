@@ -20,12 +20,38 @@ class LivingDatabase:
         self._init_db()
 
     def _get_connection(self):
-        conn = sqlite3.connect(self.db_path)
+        conn = sqlite3.connect(self.db_path, timeout=15.0)
         conn.row_factory = sqlite3.Row
+        # Enable Write-Ahead Logging (WAL) for safe multi-agent concurrent writes
+        conn.execute("PRAGMA journal_mode=WAL;")
+        conn.execute("PRAGMA synchronous=NORMAL;")
+        conn.execute("PRAGMA busy_timeout=10000;")
         return conn
 
+    def _execute_write(self, query_fn, max_retries: int = 5, base_delay: float = 0.05):
+        """
+        Executes a database write with exponential backoff and jitter on lock/busy errors.
+        """
+        import time, random
+        for attempt in range(max_retries):
+            try:
+                with self._get_connection() as conn:
+                    result = query_fn(conn)
+                    conn.commit()
+                    return result
+            except sqlite3.OperationalError as e:
+                err_msg = str(e).lower()
+                if "locked" in err_msg or "busy" in err_msg:
+                    if attempt == max_retries - 1:
+                        print(f"[DB LOCKED ERROR] Max write retries ({max_retries}) reached: {e}")
+                        raise
+                    sleep_time = (base_delay * (2 ** attempt)) + random.uniform(0.01, 0.05)
+                    time.sleep(sleep_time)
+                else:
+                    raise
+
     def _init_db(self):
-        with self._get_connection() as conn:
+        def create_tables(conn):
             cursor = conn.cursor()
             
             # 1. Knowledge Entities Table
@@ -85,17 +111,35 @@ class LivingDatabase:
             )
             """)
 
-            conn.commit()
+            # 5. Uploaded Resources Table (Syllabi, Fees, Notices, Policies)
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS uploaded_resources (
+                id TEXT PRIMARY KEY,
+                title TEXT,
+                category TEXT,
+                authority_level TEXT,
+                file_name TEXT,
+                file_path TEXT,
+                file_size INTEGER,
+                mime_type TEXT,
+                uploaded_by TEXT,
+                status TEXT DEFAULT 'APPROVED',
+                risk_level TEXT DEFAULT 'LOW',
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """)
+
+        self._execute_write(create_tables)
 
     # --- News Feed Operations ---
     def insert_news(self, id: str, source_name: str, source_handle: str, title: str, content: str, category: str, is_breaking: bool = False, image_url: str = ""):
-        with self._get_connection() as conn:
+        def write_op(conn):
             cursor = conn.cursor()
             cursor.execute("""
             INSERT OR REPLACE INTO news_feed (id, source_name, source_handle, title, content, category, is_breaking, image_url)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """, (id, source_name, source_handle, title, content, category, 1 if is_breaking else 0, image_url))
-            conn.commit()
+        self._execute_write(write_op)
 
     def get_news_feed(self, limit: int = 30) -> List[Dict[str, Any]]:
         with self._get_connection() as conn:
@@ -105,20 +149,20 @@ class LivingDatabase:
             return [dict(row) for row in rows]
 
     def like_news(self, news_id: str):
-        with self._get_connection() as conn:
+        def write_op(conn):
             cursor = conn.cursor()
             cursor.execute("UPDATE news_feed SET likes_count = likes_count + 1 WHERE id = ?", (news_id,))
-            conn.commit()
+        self._execute_write(write_op)
 
     # --- Chat History Operations ---
     def log_chat(self, session_id: str, sender: str, message: str, lang: str = "auto", is_voice: bool = False):
-        with self._get_connection() as conn:
+        def write_op(conn):
             cursor = conn.cursor()
             cursor.execute("""
             INSERT INTO chat_messages (session_id, sender, message, language_detected, audio_transcript)
             VALUES (?, ?, ?, ?, ?)
             """, (session_id, sender, message, lang, 1 if is_voice else 0))
-            conn.commit()
+        self._execute_write(write_op)
 
     def get_chat_history(self, session_id: str = "default_session", limit: int = 40) -> List[Dict[str, Any]]:
         with self._get_connection() as conn:
@@ -128,11 +172,49 @@ class LivingDatabase:
             return [dict(row) for row in rows]
 
     def delete_chat_history(self, session_id: str = "default_session") -> bool:
-        with self._get_connection() as conn:
+        def write_op(conn):
             cursor = conn.cursor()
             cursor.execute("DELETE FROM chat_messages WHERE session_id = ?", (session_id,))
-            conn.commit()
-            return True
+        self._execute_write(write_op)
+        return True
+
+    # --- Uploaded Resources Operations ---
+    def insert_uploaded_resource(self, id: str, title: str, category: str, authority_level: str, file_name: str, file_path: str, file_size: int, mime_type: str, uploaded_by: str, status: str = "APPROVED", risk_level: str = "LOW"):
+        def write_op(conn):
+            cursor = conn.cursor()
+            cursor.execute("""
+            INSERT OR REPLACE INTO uploaded_resources (id, title, category, authority_level, file_name, file_path, file_size, mime_type, uploaded_by, status, risk_level)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (id, title, category, authority_level, file_name, file_path, file_size, mime_type, uploaded_by, status, risk_level))
+        self._execute_write(write_op)
+
+    def update_uploaded_resource(self, id: str, **kwargs) -> bool:
+        allowed = ["title", "category", "authority_level", "file_name", "file_path", "file_size", "mime_type", "status", "risk_level"]
+        fields = [f"{k} = ?" for k in kwargs if k in allowed]
+        if not fields:
+            return False
+        values = [kwargs[k] for k in kwargs if k in allowed]
+        values.append(id)
+        def write_op(conn):
+            cursor = conn.cursor()
+            cursor.execute(f"UPDATE uploaded_resources SET {', '.join(fields)} WHERE id = ?", tuple(values))
+        self._execute_write(write_op)
+        return True
+
+    def get_uploaded_resources(self, limit: int = 50) -> List[Dict[str, Any]]:
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM uploaded_resources ORDER BY timestamp DESC LIMIT ?", (limit,))
+            rows = cursor.fetchall()
+            return [dict(row) for row in rows]
+
+    def get_uploaded_resource_by_id(self, id: str) -> Optional[Dict[str, Any]]:
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM uploaded_resources WHERE id = ?", (id,))
+            row = cursor.fetchone()
+            return dict(row) if row else None
+
 
     # --- Supabase PostgreSQL Operations ---
     def get_supabase_health(self) -> Dict[str, Any]:

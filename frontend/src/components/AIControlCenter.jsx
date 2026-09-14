@@ -46,19 +46,31 @@ export default function AIControlCenter({ theme }) {
     return () => clearInterval(interval)
   }, [])
 
+  const getHeaders = () => {
+    const headers = { 'Content-Type': 'application/json' }
+    const adminKey = localStorage.getItem('eduva_admin_key')
+    if (adminKey) {
+      headers['X-API-Key'] = adminKey
+    }
+    return headers
+  }
+
   const handleSimulateDiscovery = async (e) => {
     e.preventDefault()
     setIsSimulating(true)
     try {
       const res = await fetch('/api/living-system/simulate-discovery', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeaders(),
         body: JSON.stringify({ query: simQuery })
       })
       if (res.ok) {
         const data = await res.json()
         setSimResult(data)
         fetchTelemetry()
+      } else {
+        const errData = await res.json()
+        setSimResult({ status: 'AUTH_REQUIRED', error: errData.detail || 'Admin API Key Required' })
       }
     } catch (err) {
       console.error('Discovery simulation failed:', err)
@@ -71,13 +83,16 @@ export default function AIControlCenter({ theme }) {
     try {
       const res = await fetch('/api/living-system/simulate-deadline-change', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeaders(),
         body: JSON.stringify({ entity_id: 'prog_ioe_be_comp', new_deadline: '2026-09-27' })
       })
       if (res.ok) {
         const data = await res.json()
         setDeadlineResult(data)
         fetchTelemetry()
+      } else {
+        const errData = await res.json()
+        alert(errData.detail || 'Admin API key required for simulated mutations')
       }
     } catch (err) {
       console.error('Deadline change simulation failed:', err)
@@ -121,7 +136,7 @@ export default function AIControlCenter({ theme }) {
 
         {/* Global Living Telemetry Stats */}
         {telemetry && (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mt-6 pt-6 border-t border-gray-800/40">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mt-6 pt-6 border-t border-gray-800/40">
             <div className={`p-4 rounded-2xl border ${theme === 'dark' ? 'bg-gray-900/60 border-gray-800' : 'bg-white/80 border-slate-200'}`}>
               <span className="text-[10px] font-bold uppercase tracking-wider text-blue-400 block">Indexed Universities</span>
               <span className="text-2xl font-black mt-1 block">{telemetry.total_universities} Institutions</span>

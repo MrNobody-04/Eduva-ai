@@ -88,9 +88,9 @@ class LivePortalMonitor:
                     self.detected_live_notices.insert(0, notice_record)
                     self.portal_checksums[pid] = content_hash
                     
-                    # Publish autonomous event
+                    # Publish autonomous event to EventBus
                     await global_event_bus.publish(EduvaEvent(
-                        event_type="LIVE_NOTICE_DETECTED",
+                        event_type="PORTAL_CHANGE_DETECTED",
                         agent_source="LivePortalMonitor",
                         confidence=0.98,
                         data=notice_record

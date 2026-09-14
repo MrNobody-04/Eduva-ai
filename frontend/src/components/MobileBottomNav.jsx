@@ -24,7 +24,8 @@ export default function MobileBottomNav({ activeTab, setActiveTab, onOpenCopilot
               <button
                 key={tab.id}
                 onClick={() => onOpenCopilot()}
-                className="flex flex-col items-center justify-center -mt-5 cursor-pointer"
+                className="flex flex-col items-center justify-center -mt-5 cursor-pointer min-w-[50px] min-h-[50px]"
+                aria-label="Ask EDUVA AI"
               >
                 <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-blue-600 to-purple-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/40 hover:scale-105 transition-all">
                   <Bot className="w-6 h-6 animate-pulse" />
@@ -39,9 +40,10 @@ export default function MobileBottomNav({ activeTab, setActiveTab, onOpenCopilot
               <button
                 key={tab.id}
                 onClick={onOpenProfile}
-                className="flex flex-col items-center py-1 px-2 text-[10px] font-bold text-slate-400 hover:text-white cursor-pointer"
+                className="flex flex-col items-center justify-center py-1.5 px-3 text-[10px] font-bold text-slate-400 hover:text-white cursor-pointer min-h-[44px] min-w-[44px]"
+                aria-label="Student Profile"
               >
-                <Icon className="w-4 h-4 mb-0.5" />
+                <Icon className="w-5 h-5 mb-0.5" />
                 <span>{tab.label}</span>
               </button>
             )
@@ -51,11 +53,12 @@ export default function MobileBottomNav({ activeTab, setActiveTab, onOpenCopilot
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex flex-col items-center py-1 px-2 text-[10px] font-bold transition-all cursor-pointer ${
+              className={`flex flex-col items-center justify-center py-1.5 px-3 text-[10px] font-bold transition-all cursor-pointer min-h-[44px] min-w-[44px] ${
                 isActive ? 'text-blue-500 font-black' : 'hover:text-slate-200'
               }`}
+              aria-label={tab.label}
             >
-              <Icon className={`w-4 h-4 mb-0.5 ${isActive ? 'stroke-[2.5px]' : ''}`} />
+              <Icon className={`w-5 h-5 mb-0.5 ${isActive ? 'stroke-[2.5px]' : ''}`} />
               <span>{tab.label}</span>
             </button>
           )

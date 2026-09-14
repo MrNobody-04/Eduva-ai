@@ -15,7 +15,8 @@ import ScholarshipsPortal from './components/ScholarshipsPortal'
 import ConversationalCopilot from './components/ConversationalCopilot'
 import ProfileModal from './components/ProfileModal'
 import MobileBottomNav from './components/MobileBottomNav'
-import { Bot, Heart, Search, X, BookOpen, Building2, GraduationCap, ArrowRight } from 'lucide-react'
+import AdminConsole from './components/AdminConsole'
+import { Bot, Heart, Search, X, BookOpen, Building2, GraduationCap, ArrowRight, Bell, AlertTriangle } from 'lucide-react'
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('landing')
@@ -25,6 +26,10 @@ export default function App() {
   const [copilotInitialQuery, setCopilotInitialQuery] = useState('')
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
+
+  // Real-time Push Notifications State
+  const [sessionToken, setSessionToken] = useState(() => localStorage.getItem('eduva_session_token') || '')
+  const [toastNotification, setToastNotification] = useState(null)
 
   // Core Data
   const [dailyBriefing, setDailyBriefing] = useState(null)
@@ -91,6 +96,101 @@ export default function App() {
       )
     }
   }, [])
+
+  // Initialize Authenticated Cryptographic Session
+  useEffect(() => {
+    const initSession = async () => {
+      let currentToken = localStorage.getItem('eduva_session_token')
+      let currentSessionId = localStorage.getItem('eduva_session_id')
+      if (!currentToken) {
+        try {
+          const res = await fetch('/api/auth/session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              session_id: currentSessionId || undefined,
+              student_id: 'std_sujan_01'
+            })
+          })
+          if (res.ok) {
+            const data = await res.json()
+            localStorage.setItem('eduva_session_token', data.token)
+            localStorage.setItem('eduva_session_id', data.session_id)
+            setSessionToken(data.token)
+          }
+        } catch (e) {
+          console.warn('Session init failed:', e)
+        }
+      }
+    }
+    initSession()
+  }, [])
+
+  // Real-time Push Notification WebSocket with Page Visibility Reconnect
+  useEffect(() => {
+    let ws = null
+    let reconnectTimeout = null
+
+    const connectWS = () => {
+      const token = localStorage.getItem('eduva_session_token') || sessionToken
+      if (!token) return
+
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+      const wsUrl = `${protocol}//${window.location.host}/ws/notifications?token=${encodeURIComponent(token)}`
+
+      try {
+        ws = new WebSocket(wsUrl)
+        ws.onopen = () => {
+          console.log('Push notification channel connected')
+        }
+        ws.onmessage = (event) => {
+          try {
+            const msg = JSON.parse(event.data)
+            if (msg.event === 'NOTIFICATION_BROADCAST' || msg.event === 'PORTAL_NOTICE_VERIFIED') {
+              setToastNotification({
+                id: Date.now(),
+                title: msg.data?.title || 'Notice Verified',
+                message: msg.data?.message || msg.data?.diff || 'New update available',
+                severity: msg.data?.severity || 'MEDIUM',
+                link: msg.data?.link
+              })
+              // Auto dismiss toast after 6 seconds
+              setTimeout(() => {
+                setToastNotification(prev => prev && prev.id === msg.timestamp ? null : prev)
+              }, 6000)
+            }
+          } catch (e) {
+            // Heartbeat pong or non-json message
+          }
+        }
+        ws.onclose = () => {
+          if (!document.hidden) {
+            reconnectTimeout = setTimeout(connectWS, 4000)
+          }
+        }
+      } catch (err) {
+        console.warn('WebSocket connection error:', err)
+      }
+    }
+
+    connectWS()
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        if (!ws || ws.readyState === WebSocket.CLOSED) {
+          connectWS()
+        }
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      if (reconnectTimeout) clearTimeout(reconnectTimeout)
+      if (ws) ws.close()
+    }
+  }, [sessionToken])
 
   // Fetch core data on mount
   useEffect(() => {
@@ -236,6 +336,14 @@ export default function App() {
           />
         )}
 
+        {activeTab === 'admin' && (
+          <AdminConsole
+            theme={theme}
+            isDemoMode={isDemoMode}
+            toggleDemoMode={toggleDemoMode}
+          />
+        )}
+
       </main>
 
       {/* Mobile Bottom Navigation */}
@@ -336,6 +444,48 @@ export default function App() {
                 )}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Real-time Push Toast Notification Banner */}
+      {toastNotification && (
+        <div className="fixed bottom-24 lg:bottom-8 left-4 right-4 sm:left-auto sm:right-6 sm:max-w-md z-50 animate-slideUp">
+          <div className={`p-4 rounded-2xl border shadow-2xl backdrop-blur-xl flex items-start justify-between gap-3 ${
+            theme === 'dark' ? 'bg-[#0E1424]/95 border-purple-500/40 text-white' : 'bg-white/95 border-purple-300 text-slate-900'
+          }`}>
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-500 to-indigo-600 text-white flex items-center justify-center shrink-0 shadow-md">
+                <Bell className="w-4 h-4 animate-bounce" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h4 className="text-xs font-black">{toastNotification.title}</h4>
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 uppercase">
+                    {toastNotification.severity}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                  {toastNotification.message}
+                </p>
+                {toastNotification.link && (
+                  <a
+                    href={toastNotification.link}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-block mt-1.5 text-[11px] font-bold text-blue-400 hover:underline"
+                  >
+                    View Official Source &rarr;
+                  </a>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={() => setToastNotification(null)}
+              className="p-1 text-slate-400 hover:text-white rounded-lg cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
         </div>
       )}
