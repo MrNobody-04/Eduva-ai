@@ -3,9 +3,12 @@ import json
 import os
 import shutil
 import uuid
+import re
+import datetime
 from contextlib import asynccontextmanager
 from typing import Dict, List, Any, Optional
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Query, UploadFile, File, Form, Depends, Request, Header
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -28,11 +31,13 @@ from engine.eligibility_engine import global_eligibility_engine
 from engine.comparison_engine import global_comparison_engine
 from engine.gemini_service import global_gemini_service
 from engine.auth import (
-    verify_admin_key, create_session_token, verify_session_token,
-    get_authenticated_session, verify_ws_session, hash_password, verify_password
+    verify_admin_key, require_admin_user, create_session_token, verify_session_token,
+    get_authenticated_session, verify_ws_session, hash_password, verify_password,
+    validate_and_normalize_email, generate_verification_token
 )
 from engine.rate_limiter import limiter, check_ws_rate_limit, RateLimitExceeded, _rate_limit_exceeded_handler
 from engine.notification_stream import global_notification_broadcaster
+from engine.agent_registry import global_agent_registry
 
 from agents.research_agent import ResearchAgent
 from agents.verification_agent import VerificationAgent
@@ -88,6 +93,45 @@ app = FastAPI(title="EDUVA AI - Autonomous Education & University Intelligence",
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
+@app.exception_handler(HTTPException)
+async def custom_http_exception_handler(request: Request, exc: HTTPException):
+    request_id = getattr(request.state, "request_id", f"req_{uuid.uuid4().hex[:12]}")
+    code_map = {
+        400: "VALIDATION_ERROR",
+        401: "AUTH_REQUIRED",
+        403: "FORBIDDEN",
+        404: "NOT_FOUND",
+        409: "RESOURCE_CONFLICT",
+        422: "UNPROCESSABLE_ENTITY",
+        429: "RATE_LIMIT_EXCEEDED",
+        500: "INTERNAL_SERVER_ERROR"
+    }
+    error_code = code_map.get(exc.status_code, "ERROR")
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "error": {
+                "code": error_code,
+                "message": exc.detail,
+                "request_id": request_id
+            }
+        },
+        headers={"X-Request-ID": request_id}
+    )
+
+@app.middleware("http")
+async def security_and_request_id_middleware(request: Request, call_next):
+    request_id = request.headers.get("X-Request-ID") or f"req_{uuid.uuid4().hex[:12]}"
+    request.state.request_id = request_id
+    response = await call_next(request)
+    response.headers["X-Request-ID"] = request_id
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    return response
+
+
 # 1. LOCK DOWN CORS: Explicit allowlist from ALLOWED_ORIGINS env var, never combining credentials with wildcard
 raw_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,https://eduva-ai.vercel.app")
 allowed_origins = [o.strip() for o in raw_origins.split(",") if o.strip()]
@@ -131,17 +175,15 @@ class LoginRequest(BaseModel):
     email: str
     password: str
 
-class SessionInitRequest(BaseModel):
-    session_id: Optional[str] = None
-    student_id: Optional[str] = "student_user"
+class VerifyEmailRequest(BaseModel):
+    token: str
 
 @app.post("/api/auth/register")
-async def register_student(req: RegisterRequest):
-    email = req.email.lower().strip()
-    if not email or "@" not in email:
-        raise HTTPException(status_code=400, detail="A valid email address is required.")
-    if len(req.password) < 6:
-        raise HTTPException(status_code=400, detail="Password must be at least 6 characters long.")
+@limiter.limit("5/minute")
+async def register_student(req: RegisterRequest, request: Request):
+    email = validate_and_normalize_email(req.email)
+    if len(req.password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters long.")
     
     existing = global_db.get_user_by_email(email)
     if existing:
@@ -149,16 +191,40 @@ async def register_student(req: RegisterRequest):
     
     user_id = f"std_{uuid.uuid4().hex[:10]}"
     pw_hash = hash_password(req.password)
-    user = global_db.create_user(user_id=user_id, email=email, name=req.name, password_hash=pw_hash, role="student")
+    import datetime
+    verification_token = generate_verification_token()
+    token_exp = (datetime.datetime.now() + datetime.timedelta(hours=24)).isoformat()
+
+    user = global_db.create_user(
+        user_id=user_id,
+        email=email,
+        name=req.name.strip(),
+        password_hash=pw_hash,
+        role="student",
+        status="active",
+        verification_token=verification_token,
+        verification_token_expires=token_exp
+    )
     
     # Store initial student academic profile
     global_db.update_profile(user_id, {
-        "name": req.name,
+        "name": req.name.strip(),
         "email": email,
         "stream": req.stream,
         "gpa": req.gpa,
         "preferred_location": req.city
     })
+
+    # Register student entity in memory knowledge graph
+    from engine.knowledge_graph import Student
+    if user_id not in global_kg.students:
+        global_kg.students[user_id] = Student(
+            id=user_id,
+            name=req.name.strip(),
+            email=email,
+            city=req.city or "Kathmandu",
+            academic_score=f"{req.gpa or 3.0} GPA"
+        )
     
     session_id = f"sess_{uuid.uuid4().hex[:12]}"
     token = create_session_token(session_id, user_id, role="student")
@@ -166,58 +232,94 @@ async def register_student(req: RegisterRequest):
     return {
         "status": "SUCCESS",
         "message": "Student registration completed successfully.",
-        "user": {"id": user_id, "name": req.name, "email": email, "role": "student"},
+        "user": {"id": user_id, "name": req.name.strip(), "email": email, "role": "student", "status": "active"},
         "session_id": session_id,
         "student_id": user_id,
-        "token": token
+        "token": token,
+        "verification_token": verification_token
+    }
+
+@app.post("/api/auth/verify-email")
+@limiter.limit("10/minute")
+async def verify_email_endpoint(req: VerifyEmailRequest, request: Request):
+    user = global_db.verify_user_email(req.token)
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid or expired verification token.")
+    return {
+        "status": "SUCCESS",
+        "message": "Email address verified successfully.",
+        "user": {"id": user["id"], "email": user["email"], "name": user.get("name"), "role": user.get("role")}
     }
 
 @app.post("/api/auth/login")
-async def login_student(req: LoginRequest):
-    email = req.email.lower().strip()
+@limiter.limit("5/minute")
+async def login_student(req: LoginRequest, request: Request):
+    email = validate_and_normalize_email(req.email)
+    client_ip = request.client.host if request.client else "unknown"
+
     user = global_db.get_user_by_email(email)
     if not user:
+        global_db.record_security_event("LOGIN_FAILED", email, client_ip, {"reason": "User not found"})
         raise HTTPException(status_code=401, detail="Invalid email or password.")
     
     if not verify_password(req.password, user.get("password_hash", "")):
+        global_db.record_security_event("LOGIN_FAILED", email, client_ip, {"reason": "Password mismatch"})
         raise HTTPException(status_code=401, detail="Invalid email or password.")
     
+    if user.get("status") == "suspended":
+        global_db.record_security_event("LOGIN_SUSPENDED", email, client_ip, {"reason": "Account suspended"})
+        raise HTTPException(status_code=403, detail="Account is suspended. Please contact admission support.")
+
     user_id = user["id"]
+    role = user.get("role", "student")
     session_id = f"sess_{uuid.uuid4().hex[:12]}"
-    token = create_session_token(session_id, user_id, role=user.get("role", "student"))
+    token = create_session_token(session_id, user_id, role=role)
     profile = global_db.get_profile(user_id)
+
+    # Ensure student entity exists in knowledge graph
+    from engine.knowledge_graph import Student
+    if user_id not in global_kg.students:
+        global_kg.students[user_id] = Student(
+            id=user_id,
+            name=user.get("name") or "Student",
+            email=user.get("email") or email,
+            city=profile.get("preferred_location") if profile else "Kathmandu",
+            academic_score=f"{profile.get('gpa') or 3.0} GPA" if profile else "3.0 GPA"
+        )
     
     return {
         "status": "SUCCESS",
-        "message": f"Welcome back, {user.get('name', 'Student')}!",
-        "user": {"id": user_id, "name": user.get("name"), "email": user.get("email"), "role": user.get("role")},
+        "message": f"Welcome back, {user.get('name', 'Scholar')}!",
+        "user": {"id": user_id, "name": user.get("name"), "email": user.get("email"), "role": role},
         "profile": profile,
         "session_id": session_id,
         "student_id": user_id,
         "token": token
     }
 
-@app.post("/api/auth/session")
-async def create_or_refresh_session(req: SessionInitRequest):
-    sess_id = req.session_id or f"sess_{uuid.uuid4().hex[:12]}"
-    std_id = req.student_id or "student_user"
-    token = create_session_token(sess_id, std_id, role="student")
-    return {
-        "status": "SUCCESS",
-        "session_id": sess_id,
-        "student_id": std_id,
-        "token": token
-    }
-
-
 
 @app.get("/api/daily-briefing")
-async def get_daily_briefing(student_id: str = "std_sujan_01", city: Optional[str] = "Kathmandu"):
+async def get_daily_briefing(
+    city: Optional[str] = "Kathmandu",
+    session: Dict[str, Any] = Depends(get_authenticated_session)
+):
+    student_id = session.get("student_id")
     student = global_kg.students.get(student_id)
+    profile = global_db.get_profile(student_id)
+
     if not student:
-        raise HTTPException(status_code=404, detail="Student not found")
+        from engine.knowledge_graph import Student
+        student = Student(
+            id=student_id,
+            name=profile.get("name") if profile else "Scholar",
+            email=profile.get("email") if profile else "",
+            city=profile.get("preferred_location") if profile else (city or "Kathmandu"),
+            academic_score=f"{profile.get('gpa') or 3.2} GPA" if profile else "3.2 GPA"
+        )
+        global_kg.students[student_id] = student
     
-    target_city = city or student.city or "Kathmandu"
+    target_city = city or (profile.get("preferred_location") if profile else None) or student.city or "Kathmandu"
+
     weather = await safety_agent.fetch_city_telemetry(target_city)
     regional_info = get_regional_recommendations(target_city)
     matched_scholarships = scholarship_agent.match_scholarships_for_student(student_id)
@@ -402,8 +504,8 @@ async def like_news(news_id: str):
     return {"status": "SUCCESS"}
 
 @app.get("/api/notifications")
-async def get_notifications(student_id: str = "std_sujan_01"):
-    return notification_agent.get_student_notifications(student_id)
+async def get_notifications(session: Dict[str, Any] = Depends(get_authenticated_session)):
+    return notification_agent.get_student_notifications(session["student_id"])
 
 @app.get("/api/climate-disaster")
 async def get_climate_disaster():
@@ -421,14 +523,12 @@ async def get_entrance_exam_detail(exam_id: str):
         raise HTTPException(status_code=404, detail="Entrance examination not found")
     return ex
 
-# --- Student Applications Endpoints ---
+# --- Student Applications Endpoints (Strict Session Derivation & IDOR Protection) ---
 @app.get("/api/applications")
 async def get_student_applications(
-    student_id: str = "std_sujan_01",
-    session: Dict[str, str] = Depends(get_authenticated_session)
+    session: Dict[str, Any] = Depends(get_authenticated_session)
 ):
-    active_student_id = session.get("student_id") or student_id
-    return global_db.get_applications(active_student_id)
+    return global_db.get_applications(session["student_id"])
 
 class NewApplicationRequest(BaseModel):
     university_name: str
@@ -442,12 +542,10 @@ class NewApplicationRequest(BaseModel):
 @app.post("/api/applications")
 async def create_student_application(
     req: NewApplicationRequest,
-    student_id: str = "std_sujan_01",
-    session: Dict[str, str] = Depends(get_authenticated_session)
+    session: Dict[str, Any] = Depends(get_authenticated_session)
 ):
-    active_student_id = session.get("student_id") or student_id
     data = req.model_dump()
-    data["student_id"] = active_student_id
+    data["student_id"] = session["student_id"]
     return global_db.add_application(data)
 
 class UpdateAppStatusRequest(BaseModel):
@@ -457,19 +555,22 @@ class UpdateAppStatusRequest(BaseModel):
 async def patch_application_status(
     app_id: str,
     req: UpdateAppStatusRequest,
-    session: Dict[str, str] = Depends(get_authenticated_session)
+    session: Dict[str, Any] = Depends(get_authenticated_session)
 ):
+    existing = global_db.get_application_by_id(app_id)
+    if not existing:
+        raise HTTPException(status_code=404, detail="Application record not found.")
+    if existing.get("student_id") != session["student_id"] and session.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Access denied: You do not own this application record.")
     success = global_db.update_application_status(app_id, req.status)
     return {"status": "SUCCESS" if success else "FAILED"}
 
-# --- Saved Items Endpoints ---
+# --- Saved Items Endpoints (Strict Session Derivation) ---
 @app.get("/api/saved")
 async def get_saved_items(
-    student_id: str = "std_sujan_01",
-    session: Dict[str, str] = Depends(get_authenticated_session)
+    session: Dict[str, Any] = Depends(get_authenticated_session)
 ):
-    active_student_id = session.get("student_id") or student_id
-    return global_db.get_saved_items(active_student_id)
+    return global_db.get_saved_items(session["student_id"])
 
 class ToggleSavedRequest(BaseModel):
     item_type: str
@@ -481,12 +582,10 @@ class ToggleSavedRequest(BaseModel):
 @app.post("/api/saved/toggle")
 async def toggle_save_item(
     req: ToggleSavedRequest,
-    student_id: str = "std_sujan_01",
-    session: Dict[str, str] = Depends(get_authenticated_session)
+    session: Dict[str, Any] = Depends(get_authenticated_session)
 ):
-    active_student_id = session.get("student_id") or student_id
     return global_db.toggle_saved_item(
-        student_id=active_student_id,
+        student_id=session["student_id"],
         item_type=req.item_type,
         item_id=req.item_id,
         item_title=req.item_title,
@@ -603,14 +702,12 @@ async def get_all_alerts():
         return db_alerts + live_alerts
     return live_alerts
 
-# --- Student Profile Endpoints ---
+# --- Student Profile Endpoints (Strict Session Derivation) ---
 @app.get("/api/profile")
 async def get_user_profile(
-    student_id: str = "std_sujan_01",
-    session: Dict[str, str] = Depends(get_authenticated_session)
+    session: Dict[str, Any] = Depends(get_authenticated_session)
 ):
-    active_student_id = session.get("student_id") or student_id
-    return global_db.get_profile(active_student_id)
+    return global_db.get_profile(session["student_id"])
 
 class UpdateProfileRequest(BaseModel):
     name: Optional[str] = ""
@@ -627,11 +724,9 @@ class UpdateProfileRequest(BaseModel):
 @app.post("/api/profile")
 async def update_user_profile(
     req: UpdateProfileRequest,
-    student_id: str = "student_user",
-    session: Dict[str, str] = Depends(get_authenticated_session)
+    session: Dict[str, Any] = Depends(get_authenticated_session)
 ):
-    active_student_id = session.get("student_id") or student_id
-    return global_db.update_profile(active_student_id, req.model_dump())
+    return global_db.update_profile(session["student_id"], req.model_dump())
 
 # --- AI Comparative Synthesis ---
 class CompareAIRequest(BaseModel):
@@ -800,12 +895,25 @@ async def simulate_real_world_event(req: SimulateEventRequest):
 UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "data", "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-@app.get("/api/admin/resources", dependencies=[Depends(verify_admin_key)])
+MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10 MB
+ALLOWED_UPLOAD_EXTENSIONS = {".pdf", ".png", ".jpg", ".jpeg", ".webp", ".docx", ".txt"}
+ALLOWED_UPLOAD_MIME_TYPES = {
+    "application/pdf",
+    "image/png",
+    "image/jpeg",
+    "image/webp",
+    "text/plain",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+}
+
+@app.get("/api/admin/resources", dependencies=[Depends(require_admin_user)])
 async def get_all_uploaded_resources():
     return global_db.get_uploaded_resources()
 
-@app.post("/api/admin/resources/upload", dependencies=[Depends(verify_admin_key)])
+@app.post("/api/admin/resources/upload", dependencies=[Depends(require_admin_user)])
+@limiter.limit("10/minute")
 async def upload_resource(
+    request: Request,
     file: UploadFile = File(...),
     title: str = Form(...),
     category: str = Form("ACADEMIC_NOTICE"),
@@ -814,12 +922,29 @@ async def upload_resource(
     year: Optional[int] = Form(2026),
     description: Optional[str] = Form("")
 ):
+    orig_filename = os.path.basename(file.filename or "upload.bin")
+    _, ext = os.path.splitext(orig_filename)
+    ext = ext.lower()
+
+    if ext not in ALLOWED_UPLOAD_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported or dangerous file extension '{ext}'. Allowed extensions: {', '.join(sorted(ALLOWED_UPLOAD_EXTENSIONS))}"
+        )
+
+    content = await file.read()
+    if len(content) > MAX_UPLOAD_SIZE:
+        raise HTTPException(status_code=400, detail="File size exceeds maximum permitted limit of 10MB.")
+    if len(content) == 0:
+        raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+
     resource_id = f"res_{uuid.uuid4().hex[:10]}"
-    safe_filename = f"{resource_id}_{file.filename.replace(' ', '_')}"
+    safe_base = re.sub(r'[^a-zA-Z0-9_\-]', '_', os.path.splitext(orig_filename)[0])[:40]
+    safe_filename = f"{resource_id}_{safe_base}{ext}"
     file_path = os.path.join(UPLOAD_DIR, safe_filename)
 
     with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+        buffer.write(content)
 
     # Determine risk level based on authority claim
     risk_level = "LOW"
@@ -832,16 +957,16 @@ async def upload_resource(
             action_type="UPLOAD_AUTHORITATIVE_RESOURCE",
             risk_level="HIGH",
             student_id="admin_system",
-            payload={"filename": file.filename, "institution": institution}
+            payload={"filename": orig_filename, "institution": institution}
         )
         if gate_res.get("decision") == "ESCALATED_TO_HUMAN":
             status = "PENDING_APPROVAL"
 
     meta = {
         "id": resource_id,
-        "title": title,
+        "title": title.strip(),
         "filename": safe_filename,
-        "original_filename": file.filename,
+        "original_filename": orig_filename,
         "category": category,
         "authority_level": authority_level,
         "institution": institution or "",
@@ -916,6 +1041,36 @@ async def update_resource_endpoint(
 
     success = global_db.update_uploaded_resource(resource_id, updates)
     return {"status": "SUCCESS" if success else "FAILED"}
+
+@app.get("/api/admin/agent-registry", dependencies=[Depends(verify_admin_key)])
+async def get_agent_registry_endpoint():
+    """
+    Returns real-time 24/7 agent telemetry, circuit breaker states, and execution history.
+    """
+    return {
+        "telemetry": global_agent_registry.get_all_telemetry(),
+        "execution_history": global_agent_registry.get_execution_history(limit=50),
+        "system_status": orchestrator.get_system_telemetry()
+    }
+
+class TriggerPipelineRequest(BaseModel):
+    source_url: str
+    source_name: str
+    content: str
+    category: Optional[str] = "ADMISSION_NOTICE"
+
+@app.post("/api/admin/pipeline/trigger", dependencies=[Depends(verify_admin_key)])
+async def trigger_autonomous_pipeline_endpoint(req: TriggerPipelineRequest):
+    """
+    Triggers the 9-step Autonomous Information Pipeline for a specific source/content.
+    Operates autonomously without manual admin gating for verified updates.
+    """
+    return await orchestrator.execute_autonomous_pipeline(
+        source_url=req.source_url,
+        source_name=req.source_name,
+        content=req.content,
+        category=req.category or "ADMISSION_NOTICE"
+    )
 
 class AgentIngestResourceRequest(BaseModel):
     title: str
@@ -1044,25 +1199,57 @@ async def websocket_notifications(
 ):
     """
     Push-based WebSocket connection for real-time alerts and notifications.
-    Verifies HMAC session token and throttles incoming handshakes.
+    Supports in-band auth frame {"type": "auth", "token": "..."} (avoiding URL token leakage)
+    as well as secure cookie or token query parameter.
     """
     client_ip = websocket.client.host if websocket.client else "unknown"
     if not check_ws_rate_limit(client_ip):
         await websocket.close(code=1008, reason="Rate limit exceeded")
         return
 
-    session = verify_ws_session(token)
+    await websocket.accept()
+
+    session = None
+    if token:
+        session = verify_ws_session(token)
+    else:
+        # Check cookie
+        cookie_token = websocket.cookies.get("eduva_session_token")
+        if cookie_token:
+            session = verify_ws_session(cookie_token)
+        else:
+            # Await in-band auth message within 5 seconds
+            try:
+                raw_auth = await asyncio.wait_for(websocket.receive_text(), timeout=5.0)
+                try:
+                    auth_payload = json.loads(raw_auth)
+                    if auth_payload.get("type") == "auth" and auth_payload.get("token"):
+                        session = verify_ws_session(auth_payload["token"])
+                except Exception:
+                    pass
+            except asyncio.TimeoutError:
+                await websocket.close(code=1008, reason="Authentication timeout")
+                return
+
     if not session:
-        await websocket.close(code=1008, reason="Invalid or missing session token")
+        try:
+            await websocket.send_text(json.dumps({"type": "auth_error", "message": "Invalid or expired session token"}))
+            await websocket.close(code=1008, reason="Authentication failed")
+        except Exception:
+            pass
         return
 
-    student_id = session.get("student_id", "student_user")
+    student_id = session.get("student_id")
+    if not student_id:
+        await websocket.close(code=1008, reason="Missing student identifier")
+        return
+
     await global_notification_broadcaster.connect(websocket, student_id)
     try:
+        await websocket.send_text(json.dumps({"type": "auth_success", "student_id": student_id}))
         # Keep socket open and process any incoming ping/ack messages
         while True:
             data = await websocket.receive_text()
-            # Respond to client heartbeat
             if data == "ping":
                 await websocket.send_text("pong")
     except WebSocketDisconnect:

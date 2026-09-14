@@ -11,7 +11,8 @@ export default function Navbar({
   theme, 
   toggleTheme,
   onOpenSearch,
-  onOpenProfile
+  onOpenProfile,
+  userRole
 }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isMoreOpen, setIsMoreOpen] = useState(false)
@@ -27,13 +28,16 @@ export default function Navbar({
   ]
 
   // Secondary Features grouped under "More"
-  const secondaryTabs = [
+  const baseSecondaryTabs = [
     { id: 'courses', label: 'Degrees & Courses' },
     { id: 'loksewa', label: 'Loksewa Radar' },
     { id: 'applications', label: 'Application Tracker' },
-    { id: 'saved', label: 'Saved Items' },
-    { id: 'admin', label: 'Admin Console' }
+    { id: 'saved', label: 'Saved Items' }
   ]
+
+  const secondaryTabs = userRole === 'admin' 
+    ? [...baseSecondaryTabs, { id: 'admin', label: 'Admin Console' }]
+    : baseSecondaryTabs
 
   const handleTabClick = (id) => {
     setActiveTab(id)

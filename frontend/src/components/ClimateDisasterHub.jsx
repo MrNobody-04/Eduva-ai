@@ -260,6 +260,24 @@ export default function ClimateDisasterHub({ theme }) {
                 <span className="font-black uppercase tracking-wider block text-[10px] mb-0.5">⚠️ Official Disaster Advisory:</span>
                 {hazard.advisory}
               </div>
+
+              {/* Provenance & Authority Tier */}
+              {hazard.provenance_agency && (
+                <div className="flex items-center justify-between gap-2 pt-1 text-[11px] opacity-75">
+                  <span className="truncate font-medium">Source: {hazard.provenance_agency}</span>
+                  {hazard.verified_source_url && (
+                    <a 
+                      href={hazard.verified_source_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-blue-400 hover:text-blue-300 flex items-center gap-0.5 shrink-0 font-semibold"
+                    >
+                      <span>Official Portal</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="mt-4 pt-3 border-t border-gray-800/40 flex items-center justify-between text-[11px]">

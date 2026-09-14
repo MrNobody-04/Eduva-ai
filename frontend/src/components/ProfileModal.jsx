@@ -72,6 +72,7 @@ export default function ProfileModal({ isOpen, onClose, theme }) {
         localStorage.setItem('eduva_session_id', data.session_id)
         localStorage.setItem('eduva_auth_user', JSON.stringify(data.user))
         setCurrentUser(data.user)
+        window.dispatchEvent(new Event('authChange'))
 
         if (data.profile) {
           const loadedProf = {
@@ -125,6 +126,7 @@ export default function ProfileModal({ isOpen, onClose, theme }) {
         localStorage.setItem('eduva_session_id', data.session_id)
         localStorage.setItem('eduva_auth_user', JSON.stringify(data.user))
         setCurrentUser(data.user)
+        window.dispatchEvent(new Event('authChange'))
         
         const registeredProf = {
           username: regName,
@@ -196,6 +198,7 @@ export default function ProfileModal({ isOpen, onClose, theme }) {
     localStorage.removeItem('eduva_session_id')
     setCurrentUser(null)
     setAuthMode('login')
+    window.dispatchEvent(new Event('authChange'))
   }
 
   if (!isOpen) return null

@@ -36,15 +36,15 @@ export default function EntranceResultsViewer({ results = [], theme }) {
         <div className="max-w-2xl space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-500 text-xs font-black tracking-wide uppercase">
             <ShieldCheck className="w-3.5 h-3.5" />
-            <span>Verified Central Entrance Merit Registry</span>
+            <span>Retrieved Public Entrance Merit Registry</span>
           </div>
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight">
-            Nepal University Entrance Merit Results & Scorecards
+            Nepal University Entrance Merit Archives & Records
           </h1>
           <p className={`text-xs sm:text-sm leading-relaxed ${
             theme === 'dark' ? 'text-gray-300' : 'text-slate-600'
           }`}>
-            Search authentic results for IOE Engineering, CEE Medical, KUCAT KU, CMAT Management, and CSIT. Download verified PDF merit scorecards with official verification credentials.
+            Search authentic records retrieved from public merit publications for IOE Engineering, CEE Medical, KUCAT KU, CMAT Management, and CSIT. View and print verified examination records with source provenance.
           </p>
         </div>
 
@@ -117,14 +117,14 @@ export default function EntranceResultsViewer({ results = [], theme }) {
                 className="w-full py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5" />
-                <span>Download PDF Scorecard</span>
+                <span>View Retrieved Examination Record</span>
               </button>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Official PDF Scorecard Modal */}
+      {/* Retrieved Examination Record Modal */}
       {isPdfModalOpen && selectedResult && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
           <div className={`max-w-2xl w-full rounded-3xl border shadow-2xl p-6 sm:p-8 space-y-6 relative ${
@@ -137,16 +137,16 @@ export default function EntranceResultsViewer({ results = [], theme }) {
               <X className="w-5 h-5" />
             </button>
 
-            {/* Printable PDF Certificate Layout */}
+            {/* Printable Retrieved Record Layout */}
             <div id="printable-scorecard" className="border-4 border-double border-blue-500/40 p-6 rounded-2xl space-y-4">
               <div className="text-center space-y-1 border-b pb-4 border-gray-700/50">
                 <span className="text-[10px] uppercase font-black tracking-widest text-blue-500 block">
-                  GOVERNMENT OF NEPAL • HIGHER EDUCATION MERIT REGISTRY
+                  EDUVA AI • RETRIEVED EXAMINATION RECORD
                 </span>
                 <h2 className="text-xl sm:text-2xl font-black tracking-tight">
-                  OFFICIAL ENTRANCE EXAMINATION SCORECARD
+                  PUBLIC ENTRANCE MERIT RECORD
                 </h2>
-                <p className="text-xs opacity-70">Academic Session 2026/27</p>
+                <p className="text-xs opacity-70">Academic Session 2026/27 • Public Merit Archive</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4 text-xs py-2">
@@ -159,7 +159,7 @@ export default function EntranceResultsViewer({ results = [], theme }) {
                   <span className="font-black text-sm font-mono">{selectedResult.roll_number}</span>
                 </div>
                 <div>
-                  <span className="opacity-60 block">National Merit Rank</span>
+                  <span className="opacity-60 block">Reported Merit Rank</span>
                   <span className="font-black text-base text-emerald-400">#{selectedResult.merit_rank}</span>
                 </div>
                 <div>
@@ -181,14 +181,20 @@ export default function EntranceResultsViewer({ results = [], theme }) {
                 <CheckCircle2 className="w-4 h-4" />
               </div>
 
+              {/* Honest Provenance & Advisory Notice */}
+              <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-[11px] leading-relaxed text-blue-300">
+                <span className="font-bold block text-blue-400 mb-1">Source & Provenance Notice:</span>
+                This record was indexed from public merit publications by Eduva AI's autonomous verification pipeline. For official institutional enrollment confirmation, consult the institution's primary portal directly.
+              </div>
+
               <div className="pt-4 border-t border-gray-700/50 flex items-center justify-between text-[10px] opacity-60">
                 <div className="flex items-center gap-2">
                   <QrCode className="w-8 h-8 opacity-80" />
-                  <span>EDUVA-SEC-VERIFIED-{selectedResult.roll_number}</span>
+                  <span>RETRIEVED-RECORD-ID: {selectedResult.roll_number}</span>
                 </div>
                 <div className="text-right">
-                  <span>Controller of Examinations</span>
-                  <span className="block font-bold">Central Admissions Board</span>
+                  <span>Eduva AI Autonomous Verification Engine</span>
+                  <span className="block font-bold">Public Examination Archive</span>
                 </div>
               </div>
             </div>
@@ -208,7 +214,7 @@ export default function EntranceResultsViewer({ results = [], theme }) {
                 className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg transition-all cursor-pointer"
               >
                 <Printer className="w-4 h-4" />
-                <span>Print / Save as PDF</span>
+                <span>Print Record</span>
               </button>
             </div>
           </div>

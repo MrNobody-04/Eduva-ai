@@ -82,6 +82,8 @@ class StudentEntity(BaseModel):
     execution_policy: str = "SMART_AUTO"  # ALWAYS_ASK, SMART_AUTO, FULL_AUTOMATION
     notifications_enabled: bool = True
 
+Student = StudentEntity
+
 class ApplicationEntity(BaseModel):
     id: str
     student_id: str

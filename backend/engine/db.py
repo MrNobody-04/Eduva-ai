@@ -137,6 +137,9 @@ class LivingDatabase:
                 name TEXT,
                 password_hash TEXT,
                 role TEXT DEFAULT 'student',
+                status TEXT DEFAULT 'active',
+                verification_token TEXT,
+                verification_token_expires TIMESTAMP,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
             """)
@@ -158,7 +161,81 @@ class LivingDatabase:
             )
             """)
 
+            # 8. Local Saved Items Table (Fallback & Offline Storage)
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS saved_items (
+                id TEXT PRIMARY KEY,
+                student_id TEXT NOT NULL,
+                item_type TEXT NOT NULL,
+                item_id TEXT NOT NULL,
+                item_title TEXT,
+                item_subtitle TEXT,
+                item_data TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """)
+
+            # 9. Security Audit Events Table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS security_events (
+                id TEXT PRIMARY KEY,
+                event_type TEXT NOT NULL,
+                target_identifier TEXT,
+                ip_address TEXT,
+                details_json TEXT,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """)
+
+            # 10. Agent Health Registry & Execution Telemetry
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS agent_health_metrics (
+                agent_id TEXT PRIMARY KEY,
+                agent_name TEXT NOT NULL,
+                status TEXT DEFAULT 'IDLE',
+                last_started_at TEXT,
+                last_heartbeat_at TEXT,
+                last_success_at TEXT,
+                last_failure_at TEXT,
+                current_task TEXT,
+                tasks_completed INTEGER DEFAULT 0,
+                tasks_failed INTEGER DEFAULT 0,
+                consecutive_failures INTEGER DEFAULT 0,
+                last_error TEXT,
+                last_verified_update TEXT,
+                next_run_at TEXT,
+                source_history_json TEXT
+            )
+            """)
+
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS agent_execution_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                agent_id TEXT NOT NULL,
+                event_type TEXT NOT NULL,
+                details_json TEXT,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """)
+
         self._execute_write(create_tables)
+
+        # Non-destructive migrations for existing SQLite tables
+        def run_migrations(conn):
+            cursor = conn.cursor()
+            try:
+                cursor.execute("ALTER TABLE users ADD COLUMN status TEXT DEFAULT 'active'")
+            except Exception:
+                pass
+            try:
+                cursor.execute("ALTER TABLE users ADD COLUMN verification_token TEXT")
+            except Exception:
+                pass
+            try:
+                cursor.execute("ALTER TABLE users ADD COLUMN verification_token_expires TIMESTAMP")
+            except Exception:
+                pass
+        self._execute_write(run_migrations)
 
     # --- News Feed Operations ---
     def insert_news(self, id: str, source_name: str, source_handle: str, title: str, content: str, category: str, is_breaking: bool = False, image_url: str = ""):
@@ -208,13 +285,42 @@ class LivingDatabase:
         return True
 
     # --- Uploaded Resources Operations ---
-    def insert_uploaded_resource(self, id: str, title: str, category: str, authority_level: str, file_name: str, file_path: str, file_size: int, mime_type: str, uploaded_by: str, status: str = "APPROVED", risk_level: str = "LOW"):
+    def insert_uploaded_resource(
+        self,
+        id: Any,
+        title: str = "",
+        category: str = "",
+        authority_level: str = "",
+        file_name: str = "",
+        file_path: str = "",
+        file_size: int = 0,
+        mime_type: str = "",
+        uploaded_by: str = "Admin",
+        status: str = "APPROVED",
+        risk_level: str = "LOW"
+    ):
+        if isinstance(id, dict):
+            d = id
+            r_id = d.get("id", "")
+            title = d.get("title", "")
+            category = d.get("category", "")
+            authority_level = d.get("authority_level", "")
+            file_name = d.get("filename", d.get("file_name", ""))
+            file_path = d.get("file_path", "")
+            file_size = d.get("file_size", 0)
+            mime_type = d.get("mime_type", "")
+            uploaded_by = d.get("uploaded_by", "Admin")
+            status = d.get("status", "APPROVED")
+            risk_level = d.get("risk_level", "LOW")
+        else:
+            r_id = id
+
         def write_op(conn):
             cursor = conn.cursor()
             cursor.execute("""
             INSERT OR REPLACE INTO uploaded_resources (id, title, category, authority_level, file_name, file_path, file_size, mime_type, uploaded_by, status, risk_level)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (id, title, category, authority_level, file_name, file_path, file_size, mime_type, uploaded_by, status, risk_level))
+            """, (r_id, title, category, authority_level, file_name, file_path, file_size, mime_type, uploaded_by, status, risk_level))
         self._execute_write(write_op)
 
     def update_uploaded_resource(self, id: str, **kwargs) -> bool:
@@ -450,15 +556,27 @@ class LivingDatabase:
         return True
 
     # --- User Account & Auth Operations (SQLite + Supabase) ---
-    def create_user(self, user_id: str, email: str, name: str, password_hash: str, role: str = "student") -> Dict[str, Any]:
+    def create_user(
+        self,
+        user_id: str,
+        email: str,
+        name: str,
+        password_hash: str,
+        role: str = "student",
+        status: str = "active",
+        verification_token: Optional[str] = None,
+        verification_token_expires: Optional[str] = None
+    ) -> Dict[str, Any]:
+        clean_email = email.lower().strip()
+        clean_name = name.strip()
         def write_user(conn):
             cursor = conn.cursor()
             cursor.execute("""
-                INSERT OR REPLACE INTO users (id, email, name, password_hash, role)
-                VALUES (?, ?, ?, ?, ?)
-            """, (user_id, email.lower().strip(), name.strip(), password_hash, role))
+                INSERT OR REPLACE INTO users (id, email, name, password_hash, role, status, verification_token, verification_token_expires)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (user_id, clean_email, clean_name, password_hash, role, status, verification_token, verification_token_expires))
         self._execute_write(write_user)
-        return {"id": user_id, "email": email.lower().strip(), "name": name, "role": role}
+        return {"id": user_id, "email": clean_email, "name": clean_name, "role": role, "status": status}
 
     def get_user_by_email(self, email: str) -> Optional[Dict[str, Any]]:
         with self._get_connection() as conn:
@@ -474,8 +592,64 @@ class LivingDatabase:
             row = cursor.fetchone()
             return dict(row) if row else None
 
+    def verify_user_email(self, token: str) -> Optional[Dict[str, Any]]:
+        """Validates verification token, activates user, clears token."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT id, email, name, role, verification_token_expires 
+                FROM users 
+                WHERE verification_token = ?
+            """, (token.strip(),))
+            row = cursor.fetchone()
+            if not row:
+                return None
+            user_dict = dict(row)
+            
+            # Check expiration
+            expires = user_dict.get("verification_token_expires")
+            if expires:
+                try:
+                    exp_dt = datetime.datetime.fromisoformat(expires)
+                    if datetime.datetime.now() > exp_dt:
+                        return None
+                except Exception:
+                    pass
+
+        def write_verify(conn):
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE users 
+                SET status = 'active', verification_token = NULL, verification_token_expires = NULL 
+                WHERE id = ?
+            """, (user_dict["id"],))
+        self._execute_write(write_verify)
+        user_dict["status"] = "active"
+        return user_dict
+
+    def update_verification_token(self, email: str, token: str, expires_iso: str) -> bool:
+        def write_token(conn):
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE users 
+                SET verification_token = ?, verification_token_expires = ?
+                WHERE email = ?
+            """, (token, expires_iso, email.lower().strip()))
+        self._execute_write(write_token)
+        return True
+
+    def record_security_event(self, event_type: str, target: str, ip: str, details: Dict[str, Any]):
+        import uuid
+        def write_sec(conn):
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO security_events (id, event_type, target_identifier, ip_address, details_json)
+                VALUES (?, ?, ?, ?, ?)
+            """, (f"sec_{uuid.uuid4().hex[:10]}", event_type, target, ip, json.dumps(details)))
+        self._execute_write(write_sec)
+
     # --- Saved Items Operations ---
-    def get_saved_items(self, student_id: str = "std_sujan_01") -> List[Dict[str, Any]]:
+    def get_saved_items(self, student_id: str) -> List[Dict[str, Any]]:
         if self.database_url:
             try:
                 import psycopg2
@@ -489,7 +663,21 @@ class LivingDatabase:
                 return [dict(r) for r in rows]
             except Exception:
                 pass
-        return []
+        # SQLite fallback with parameterized query
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM saved_items WHERE student_id = ? ORDER BY created_at DESC", (student_id,))
+            rows = cursor.fetchall()
+            items = []
+            for r in rows:
+                d = dict(r)
+                if isinstance(d.get("item_data"), str):
+                    try:
+                        d["item_data"] = json.loads(d["item_data"])
+                    except Exception:
+                        pass
+                items.append(d)
+            return items
 
     def toggle_saved_item(self, student_id: str, item_type: str, item_id: str, item_title: str, item_subtitle: str, item_data: Dict[str, Any]) -> Dict[str, Any]:
         if self.database_url:
@@ -499,7 +687,6 @@ class LivingDatabase:
                 conn = psycopg2.connect(self.database_url, connect_timeout=5)
                 conn.autocommit = True
                 cur = conn.cursor()
-                # Check if exists
                 cur.execute("SELECT id FROM saved_items WHERE student_id = %s AND item_type = %s AND item_id = %s;", (student_id, item_type, item_id))
                 existing = cur.fetchone()
                 if existing:
@@ -516,9 +703,55 @@ class LivingDatabase:
                 cur.close()
                 conn.close()
                 return {"status": "SUCCESS", "action": action, "item_id": item_id}
-            except Exception as e:
-                return {"status": "ERROR", "error": str(e)}
-        return {"status": "SUCCESS", "action": "SAVED"}
+            except Exception:
+                pass
+
+        # SQLite fallback with atomic write and parameterized queries
+        import uuid
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT id FROM saved_items WHERE student_id = ? AND item_type = ? AND item_id = ?", (student_id, item_type, item_id))
+            existing = cursor.fetchone()
+
+        if existing:
+            def delete_op(conn):
+                cursor = conn.cursor()
+                cursor.execute("DELETE FROM saved_items WHERE id = ?", (existing[0],))
+            self._execute_write(delete_op)
+            return {"status": "SUCCESS", "action": "REMOVED", "item_id": item_id}
+        else:
+            new_id = f"sv_{uuid.uuid4().hex[:8]}"
+            def insert_op(conn):
+                cursor = conn.cursor()
+                cursor.execute("""
+                    INSERT INTO saved_items (id, student_id, item_type, item_id, item_title, item_subtitle, item_data)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                """, (new_id, student_id, item_type, item_id, item_title, item_subtitle, json.dumps(item_data)))
+            self._execute_write(insert_op)
+            return {"status": "SUCCESS", "action": "SAVED", "item_id": item_id}
+
+    def get_application_by_id(self, app_id: str) -> Optional[Dict[str, Any]]:
+        """Retrieves a single application by ID to verify ownership (prevents IDOR)."""
+        if self.database_url:
+            try:
+                import psycopg2
+                import psycopg2.extras
+                conn = psycopg2.connect(self.database_url, connect_timeout=5)
+                cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+                cur.execute("SELECT * FROM applications WHERE id = %s;", (app_id,))
+                row = cur.fetchone()
+                cur.close()
+                conn.close()
+                if row:
+                    return dict(row)
+            except Exception:
+                pass
+
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM applications WHERE id = ?", (app_id,))
+            row = cursor.fetchone()
+            return dict(row) if row else None
 
     # --- Climate & Disaster Alerts Operations ---
     def get_climate_alerts(self) -> List[Dict[str, Any]]:

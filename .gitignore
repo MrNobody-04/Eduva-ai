@@ -22,6 +22,7 @@ build/
 *.db
 *.sqlite3
 *.log
+backend/data/uploads/
 .system_generated/
 
 # OS & Editor files

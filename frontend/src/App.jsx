@@ -16,7 +16,7 @@ import ConversationalCopilot from './components/ConversationalCopilot'
 import ProfileModal from './components/ProfileModal'
 import MobileBottomNav from './components/MobileBottomNav'
 import AdminConsole from './components/AdminConsole'
-import { Bot, Heart, Search, X, BookOpen, Building2, GraduationCap, ArrowRight, Bell, AlertTriangle } from 'lucide-react'
+import { Bot, Heart, Search, X, BookOpen, Building2, GraduationCap, ArrowRight, Bell, AlertTriangle, Lock, ShieldAlert } from 'lucide-react'
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('landing')
@@ -26,6 +26,36 @@ export default function App() {
   const [copilotInitialQuery, setCopilotInitialQuery] = useState('')
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
+
+  // Authenticated User & Role Management
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const raw = localStorage.getItem('eduva_auth_user')
+      return raw ? JSON.parse(raw) : null
+    } catch (e) {
+      return null
+    }
+  })
+
+  const userRole = currentUser?.role || 'student'
+
+  useEffect(() => {
+    const syncUser = () => {
+      try {
+        const raw = localStorage.getItem('eduva_auth_user')
+        setCurrentUser(raw ? JSON.parse(raw) : null)
+        setSessionToken(localStorage.getItem('eduva_session_token') || '')
+      } catch (e) {
+        setCurrentUser(null)
+      }
+    }
+    window.addEventListener('authChange', syncUser)
+    window.addEventListener('storage', syncUser)
+    return () => {
+      window.removeEventListener('authChange', syncUser)
+      window.removeEventListener('storage', syncUser)
+    }
+  }, [])
 
   // Real-time Push Notifications State
   const [sessionToken, setSessionToken] = useState(() => localStorage.getItem('eduva_session_token') || '')
@@ -110,36 +140,7 @@ export default function App() {
     }
   }, [])
 
-  // Initialize Authenticated Cryptographic Session
-  useEffect(() => {
-    const initSession = async () => {
-      let currentToken = localStorage.getItem('eduva_session_token')
-      let currentSessionId = localStorage.getItem('eduva_session_id')
-      if (!currentToken) {
-        try {
-          const res = await fetch('/api/auth/session', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              session_id: currentSessionId || undefined,
-              student_id: 'std_sujan_01'
-            })
-          })
-          if (res.ok) {
-            const data = await res.json()
-            localStorage.setItem('eduva_session_token', data.token)
-            localStorage.setItem('eduva_session_id', data.session_id)
-            setSessionToken(data.token)
-          }
-        } catch (e) {
-          console.warn('Session init failed:', e)
-        }
-      }
-    }
-    initSession()
-  }, [])
-
-  // Real-time Push Notification WebSocket with Page Visibility Reconnect
+  // Real-time Push Notification WebSocket with In-Band Authentication
   useEffect(() => {
     let ws = null
     let reconnectTimeout = null
@@ -149,12 +150,14 @@ export default function App() {
       if (!token) return
 
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-      const wsUrl = `${protocol}//${window.location.host}/ws/notifications?token=${encodeURIComponent(token)}`
+      const wsUrl = `${protocol}//${window.location.host}/ws/notifications`
 
       try {
         ws = new WebSocket(wsUrl)
         ws.onopen = () => {
-          console.log('Push notification channel connected')
+          // In-band authentication frame (avoids token in URL logs)
+          ws.send(JSON.stringify({ type: 'auth', token }))
+          console.log('Push notification channel authenticated')
         }
         ws.onmessage = (event) => {
           try {
@@ -255,6 +258,7 @@ export default function App() {
         toggleTheme={toggleTheme}
         onOpenSearch={() => setIsSearchOpen(true)}
         onOpenProfile={() => setIsProfileOpen(true)}
+        userRole={userRole}
       />
 
       {/* Main Content Area */}
@@ -354,11 +358,39 @@ export default function App() {
         )}
 
         {activeTab === 'admin' && (
-          <AdminConsole
-            theme={theme}
-            isDemoMode={isDemoMode}
-            toggleDemoMode={toggleDemoMode}
-          />
+          userRole === 'admin' ? (
+            <AdminConsole
+              theme={theme}
+              isDemoMode={isDemoMode}
+              toggleDemoMode={toggleDemoMode}
+            />
+          ) : (
+            <div className={`p-8 sm:p-12 rounded-3xl border shadow-xl text-center max-w-xl mx-auto space-y-4 my-10 ${
+              theme === 'dark' ? 'bg-[#0E1424] border-red-900/40 text-white' : 'bg-white border-red-200 text-slate-900'
+            }`}>
+              <div className="w-14 h-14 rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center mx-auto">
+                <Lock className="w-7 h-7" />
+              </div>
+              <h2 className="text-xl sm:text-2xl font-black">Restricted Administrator Area</h2>
+              <p className="text-xs sm:text-sm text-slate-400">
+                The Admin Console is strictly reserved for authenticated system administrators. Please log in with an administrator account or provide an authorized API key.
+              </p>
+              <div className="pt-2 flex justify-center gap-3">
+                <button
+                  onClick={() => setActiveTab('landing')}
+                  className="px-5 py-2.5 rounded-xl border border-slate-700 text-xs font-bold hover:bg-slate-800 transition-all cursor-pointer"
+                >
+                  Return Home
+                </button>
+                <button
+                  onClick={() => setIsProfileOpen(true)}
+                  className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all cursor-pointer"
+                >
+                  Sign In as Administrator
+                </button>
+              </div>
+            </div>
+          )
         )}
 
       </main>
