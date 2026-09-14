@@ -5,7 +5,7 @@ import {
   CheckSquare, Square, Bot, Sparkles, GraduationCap, Building2, ChevronRight
 } from 'lucide-react'
 
-export default function ApplicationTracker({ theme, onOpenCopilot }) {
+export default function ApplicationTracker({ theme, onOpenCopilot, prefillData }) {
   const [applications, setApplications] = useState([])
   const [loading, setLoading] = useState(true)
   const [isNewModalOpen, setIsNewModalOpen] = useState(false)
@@ -27,16 +27,6 @@ export default function ApplicationTracker({ theme, onOpenCopilot }) {
     }
   })
 
-  useEffect(() => {
-    try {
-      localStorage.setItem('eduva_docs_checklist', JSON.stringify(docChecklist))
-    } catch (e) {}
-  }, [docChecklist])
-
-  const toggleDoc = (key) => {
-    setDocChecklist(prev => ({ ...prev, [key]: !prev[key] }))
-  }
-
   const [newApp, setNewApp] = useState({
     institution: '',
     program: '',
@@ -46,6 +36,22 @@ export default function ApplicationTracker({ theme, onOpenCopilot }) {
     status: 'IN_PROGRESS',
     notes: ''
   })
+
+  // Watch for prefillData incoming from DailyBriefing, Copilot, or Colleges
+  useEffect(() => {
+    if (prefillData && prefillData.institution) {
+      setNewApp({
+        institution: prefillData.institution || '',
+        program: prefillData.program || '',
+        portal_url: prefillData.portal_url || '',
+        application_fee: prefillData.application_fee || prefillData.fee || 'NPR 2,000',
+        deadline: prefillData.deadline || '2026-10-15',
+        status: 'IN_PROGRESS',
+        notes: prefillData.notes || `Added from ${prefillData.source || 'admissions radar'}.`
+      })
+      setIsNewModalOpen(true)
+    }
+  }, [prefillData])
 
   const fetchApplications = async () => {
     try {

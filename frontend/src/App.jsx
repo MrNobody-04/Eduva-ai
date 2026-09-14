@@ -41,6 +41,19 @@ export default function App() {
   const [searchResults, setSearchResults] = useState(null)
   const [isSearching, setIsSearching] = useState(false)
 
+  // Tracker Pre-fill State
+  const [trackerPrefill, setTrackerPrefill] = useState(null)
+
+  const handleAddToTracker = (item) => {
+    setTrackerPrefill(item)
+    setActiveTab('applications')
+    setToastNotification({
+      title: 'Added to Application Tracker',
+      message: `${item.institution} - ${item.program} has been queued in your tracker.`,
+      severity: 'SUCCESS'
+    })
+  }
+
   const toggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark'
     setTheme(next)
@@ -262,6 +275,7 @@ export default function App() {
             theme={theme}
             onOpenCopilot={() => setIsCopilotOpen(true)}
             onNavigateTab={(tab) => setActiveTab(tab)}
+            onAddToTracker={handleAddToTracker}
             isDemoMode={isDemoMode}
           />
         )}
@@ -276,6 +290,7 @@ export default function App() {
           <UniversityHub
             theme={theme}
             onOpenCopilot={openCopilotWithPrompt}
+            onAddToTracker={handleAddToTracker}
           />
         )}
 
@@ -284,6 +299,7 @@ export default function App() {
             colleges={colleges}
             theme={theme}
             onOpenCopilot={openCopilotWithPrompt}
+            onAddToTracker={handleAddToTracker}
           />
         )}
 
@@ -312,6 +328,7 @@ export default function App() {
           <ApplicationTracker
             theme={theme}
             onOpenCopilot={openCopilotWithPrompt}
+            prefillData={trackerPrefill}
           />
         )}
 
@@ -578,6 +595,7 @@ export default function App() {
         onClose={() => { setIsCopilotOpen(false); setCopilotInitialQuery(''); }}
         initialQuery={copilotInitialQuery}
         theme={theme}
+        onAddToTracker={handleAddToTracker}
       />
 
       {/* Student Profile Modal */}

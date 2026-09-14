@@ -129,6 +129,35 @@ class LivingDatabase:
             )
             """)
 
+            # 6. Registered Users Table (Real Email/Password Authentication)
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id TEXT PRIMARY KEY,
+                email TEXT UNIQUE,
+                name TEXT,
+                password_hash TEXT,
+                role TEXT DEFAULT 'student',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """)
+
+            # 7. Local Applications Table (Fallback & Offline Storage)
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS applications (
+                id TEXT PRIMARY KEY,
+                student_id TEXT,
+                university_name TEXT,
+                program_name TEXT,
+                portal_url TEXT,
+                deadline TEXT,
+                status TEXT,
+                urgency TEXT,
+                notes TEXT,
+                documents_json TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """)
+
         self._execute_write(create_tables)
 
     # --- News Feed Operations ---
@@ -347,9 +376,27 @@ class LivingDatabase:
                 return [dict(r) for r in rows]
             except Exception:
                 pass
-        return []
+        
+        # SQLite Local Fallback
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM applications WHERE student_id = ? ORDER BY created_at DESC", (student_id,))
+            rows = cursor.fetchall()
+            return [dict(r) for r in rows]
 
     def add_application(self, app_data: Dict[str, Any]) -> Dict[str, Any]:
+        import uuid
+        new_id = app_data.get("id") or f"app_{uuid.uuid4().hex[:8]}"
+        app_data["id"] = new_id
+        student_id = app_data.get("student_id", "std_sujan_01")
+        univ = app_data.get("university_name", "") or app_data.get("institution", "")
+        prog = app_data.get("program_name", "") or app_data.get("program", "")
+        portal = app_data.get("portal_url", "")
+        deadline = app_data.get("deadline", "2026-10-15")
+        status = app_data.get("status", "IN_PROGRESS")
+        urgency = app_data.get("urgency", "MEDIUM")
+        notes = app_data.get("notes", "")
+
         if self.database_url:
             try:
                 import psycopg2
@@ -357,24 +404,30 @@ class LivingDatabase:
                 conn = psycopg2.connect(self.database_url, connect_timeout=5)
                 conn.autocommit = True
                 cur = conn.cursor()
-                import uuid
-                new_id = app_data.get("id") or f"app_{uuid.uuid4().hex[:8]}"
                 cur.execute("""
                     INSERT INTO applications (id, student_id, university_name, program_name, deadline, status, urgency, notes, documents_json)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                     ON CONFLICT (id) DO UPDATE SET status = EXCLUDED.status, notes = EXCLUDED.notes;
                 """, (
-                    new_id, app_data.get("student_id", "std_sujan_01"), app_data["university_name"],
-                    app_data["program_name"], app_data.get("deadline", "2026-10-15"),
-                    app_data.get("status", "Applied"), app_data.get("urgency", "MEDIUM"),
-                    app_data.get("notes", ""), Json(app_data.get("documents_json", {}))
+                    new_id, student_id, univ, prog, deadline, status, urgency, notes,
+                    Json(app_data.get("documents_json", {}))
                 ))
                 cur.close()
                 conn.close()
-                app_data["id"] = new_id
-                return app_data
-            except Exception as e:
-                return {"error": str(e)}
+            except Exception:
+                pass
+
+        # Write to SQLite
+        def write_app(conn):
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT OR REPLACE INTO applications (id, student_id, university_name, program_name, portal_url, deadline, status, urgency, notes, documents_json)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                new_id, student_id, univ, prog, portal, deadline, status, urgency, notes,
+                json.dumps(app_data.get("documents_json", {}))
+            ))
+        self._execute_write(write_app)
         return app_data
 
     def update_application_status(self, app_id: str, new_status: str) -> bool:
@@ -387,10 +440,39 @@ class LivingDatabase:
                 cur.execute("UPDATE applications SET status = %s WHERE id = %s;", (new_status, app_id))
                 cur.close()
                 conn.close()
-                return True
             except Exception:
-                return False
-        return False
+                pass
+
+        def write_update(conn):
+            cursor = conn.cursor()
+            cursor.execute("UPDATE applications SET status = ? WHERE id = ?", (new_status, app_id))
+        self._execute_write(write_update)
+        return True
+
+    # --- User Account & Auth Operations (SQLite + Supabase) ---
+    def create_user(self, user_id: str, email: str, name: str, password_hash: str, role: str = "student") -> Dict[str, Any]:
+        def write_user(conn):
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT OR REPLACE INTO users (id, email, name, password_hash, role)
+                VALUES (?, ?, ?, ?, ?)
+            """, (user_id, email.lower().strip(), name.strip(), password_hash, role))
+        self._execute_write(write_user)
+        return {"id": user_id, "email": email.lower().strip(), "name": name, "role": role}
+
+    def get_user_by_email(self, email: str) -> Optional[Dict[str, Any]]:
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM users WHERE email = ?", (email.lower().strip(),))
+            row = cursor.fetchone()
+            return dict(row) if row else None
+
+    def get_user_by_id(self, user_id: str) -> Optional[Dict[str, Any]]:
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+            row = cursor.fetchone()
+            return dict(row) if row else None
 
     # --- Saved Items Operations ---
     def get_saved_items(self, student_id: str = "std_sujan_01") -> List[Dict[str, Any]]:

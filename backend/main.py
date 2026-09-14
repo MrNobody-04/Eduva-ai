@@ -27,7 +27,10 @@ from engine.living_knowledge_system import global_living_system
 from engine.eligibility_engine import global_eligibility_engine
 from engine.comparison_engine import global_comparison_engine
 from engine.gemini_service import global_gemini_service
-from engine.auth import verify_admin_key, create_session_token, verify_session_token, get_authenticated_session, verify_ws_session
+from engine.auth import (
+    verify_admin_key, create_session_token, verify_session_token,
+    get_authenticated_session, verify_ws_session, hash_password, verify_password
+)
 from engine.rate_limiter import limiter, check_ws_rate_limit, RateLimitExceeded, _rate_limit_exceeded_handler
 from engine.notification_stream import global_notification_broadcaster
 
@@ -115,16 +118,90 @@ async def get_database_status():
 async def get_gemini_status():
     return global_gemini_service.get_status()
 
-# --- Cryptographic Student Session Authentication ---
+# --- Real Authentication & Cryptographic Session Layer ---
+class RegisterRequest(BaseModel):
+    name: str
+    email: str
+    password: str
+    stream: Optional[str] = "Science"
+    gpa: Optional[float] = 3.0
+    city: Optional[str] = "Kathmandu"
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
 class SessionInitRequest(BaseModel):
     session_id: Optional[str] = None
     student_id: Optional[str] = "student_user"
+
+@app.post("/api/auth/register")
+async def register_student(req: RegisterRequest):
+    email = req.email.lower().strip()
+    if not email or "@" not in email:
+        raise HTTPException(status_code=400, detail="A valid email address is required.")
+    if len(req.password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters long.")
+    
+    existing = global_db.get_user_by_email(email)
+    if existing:
+        raise HTTPException(status_code=409, detail="An account with this email already exists.")
+    
+    user_id = f"std_{uuid.uuid4().hex[:10]}"
+    pw_hash = hash_password(req.password)
+    user = global_db.create_user(user_id=user_id, email=email, name=req.name, password_hash=pw_hash, role="student")
+    
+    # Store initial student academic profile
+    global_db.update_profile(user_id, {
+        "name": req.name,
+        "email": email,
+        "stream": req.stream,
+        "gpa": req.gpa,
+        "preferred_location": req.city
+    })
+    
+    session_id = f"sess_{uuid.uuid4().hex[:12]}"
+    token = create_session_token(session_id, user_id, role="student")
+    
+    return {
+        "status": "SUCCESS",
+        "message": "Student registration completed successfully.",
+        "user": {"id": user_id, "name": req.name, "email": email, "role": "student"},
+        "session_id": session_id,
+        "student_id": user_id,
+        "token": token
+    }
+
+@app.post("/api/auth/login")
+async def login_student(req: LoginRequest):
+    email = req.email.lower().strip()
+    user = global_db.get_user_by_email(email)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid email or password.")
+    
+    if not verify_password(req.password, user.get("password_hash", "")):
+        raise HTTPException(status_code=401, detail="Invalid email or password.")
+    
+    user_id = user["id"]
+    session_id = f"sess_{uuid.uuid4().hex[:12]}"
+    token = create_session_token(session_id, user_id, role=user.get("role", "student"))
+    profile = global_db.get_profile(user_id)
+    
+    return {
+        "status": "SUCCESS",
+        "message": f"Welcome back, {user.get('name', 'Student')}!",
+        "user": {"id": user_id, "name": user.get("name"), "email": user.get("email"), "role": user.get("role")},
+        "profile": profile,
+        "session_id": session_id,
+        "student_id": user_id,
+        "token": token
+    }
 
 @app.post("/api/auth/session")
 async def create_or_refresh_session(req: SessionInitRequest):
     sess_id = req.session_id or f"sess_{uuid.uuid4().hex[:12]}"
     std_id = req.student_id or "student_user"
-    token = create_session_token(sess_id, std_id)
+    token = create_session_token(sess_id, std_id, role="student")
     return {
         "status": "SUCCESS",
         "session_id": sess_id,

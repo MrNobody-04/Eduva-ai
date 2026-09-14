@@ -45,7 +45,24 @@ async def verify_admin_key(request: Request, key_from_header: Optional[str] = Se
     return provided_key
 
 
-def create_session_token(session_id: str, student_id: str, expiry_hours: int = 72) -> str:
+def hash_password(password: str) -> str:
+    """Hashes password with PBKDF2-HMAC-SHA256 and salt."""
+    salt = os.urandom(16)
+    dk = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 100000)
+    return base64.b64encode(salt + dk).decode('utf-8')
+
+def verify_password(password: str, hashed: str) -> bool:
+    """Verifies password against stored PBKDF2 hash."""
+    try:
+        data = base64.b64decode(hashed.encode('utf-8'))
+        salt = data[:16]
+        expected_dk = data[16:]
+        dk = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 100000)
+        return hmac.compare_digest(dk, expected_dk)
+    except Exception:
+        return False
+
+def create_session_token(session_id: str, student_id: str, role: str = "student", expiry_hours: int = 72) -> str:
     """
     Creates a tamper-proof HMAC-SHA256 signed session token.
     Format: <base64_payload>.<signature_hex>
@@ -53,6 +70,7 @@ def create_session_token(session_id: str, student_id: str, expiry_hours: int = 7
     payload = {
         "session_id": session_id,
         "student_id": student_id,
+        "role": role,
         "exp": int(time.time()) + (expiry_hours * 3600)
     }
     payload_bytes = json.dumps(payload, separators=(',', ':')).encode('utf-8')

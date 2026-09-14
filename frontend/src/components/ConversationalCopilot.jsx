@@ -17,7 +17,7 @@ const WELCOME_MSG = {
   }
 }
 
-export default function ConversationalCopilot({ isOpen, onClose, initialQuery = '', theme }) {
+export default function ConversationalCopilot({ isOpen, onClose, initialQuery = '', theme, onAddToTracker }) {
   const [sessionId, setSessionId] = useState(() => {
     let sid = localStorage.getItem('eduva_chat_session_id')
     if (!sid) {
@@ -276,10 +276,31 @@ export default function ConversationalCopilot({ isOpen, onClose, initialQuery = 
                 {m.cards && m.response_type === 'COLLEGE_CARDS' && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2 pt-2 border-t border-slate-800/60">
                     {m.cards.map((col, i) => (
-                      <div key={i} className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 space-y-1 text-xs">
-                        <span className="font-bold text-white block">{col.name}</span>
+                      <div key={i} className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 space-y-1.5 text-xs">
+                        <span className="font-bold text-slate-100 dark:text-white block">{col.name}</span>
                         <span className="text-[10px] text-blue-400 block">{col.university} • {col.location}</span>
-                        <span className="text-[10px] text-emerald-400 block font-bold">{col.fee_sample}</span>
+                        <div className="flex items-center justify-between pt-1">
+                          <span className="text-[10px] text-emerald-400 font-bold">{col.fee_sample}</span>
+                          {onAddToTracker && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                onAddToTracker({
+                                  institution: col.name,
+                                  program: col.target_program || 'Undergraduate Degree',
+                                  portal_url: '',
+                                  deadline: '2026-10-15',
+                                  application_fee: col.fee_sample || 'NPR 2,000',
+                                  source: 'AI Counselor Recommendation'
+                                })
+                                onClose()
+                              }}
+                              className="px-2 py-0.5 rounded-lg bg-blue-600/30 hover:bg-blue-600 text-blue-300 hover:text-white text-[9px] font-black border border-blue-500/30 transition-all cursor-pointer"
+                            >
+                              + Tracker
+                            </button>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>

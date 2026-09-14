@@ -4,7 +4,7 @@ import {
   Award, ShieldCheck, CheckCircle2, ChevronRight, X
 } from 'lucide-react'
 
-export default function CollegesDirectory({ colleges = [], theme }) {
+export default function CollegesDirectory({ colleges = [], theme, onAddToTracker }) {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedUniv, setSelectedUniv] = useState('ALL')
   const [selectedCollege, setSelectedCollege] = useState(null)
@@ -195,16 +195,36 @@ export default function CollegesDirectory({ colleges = [], theme }) {
               </div>
             </div>
 
-            <div className="pt-4 border-t border-gray-800/60 flex items-center justify-between text-xs">
+            <div className="pt-4 border-t border-gray-800/60 flex items-center justify-between text-xs gap-3">
               <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1">
                 <ShieldCheck className="w-3.5 h-3.5" /> Level 1 Affiliation Verified
               </span>
-              <button
-                onClick={() => setSelectedCollege(null)}
-                className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all cursor-pointer"
-              >
-                Close
-              </button>
+              <div className="flex items-center gap-2">
+                {onAddToTracker && (
+                  <button
+                    onClick={() => {
+                      onAddToTracker({
+                        institution: selectedCollege.name,
+                        program: selectedCollege.programs?.[0] || 'Undergraduate Degree',
+                        portal_url: selectedCollege.website || '',
+                        deadline: '2026-10-15',
+                        application_fee: selectedCollege.fee_structure ? Object.values(selectedCollege.fee_structure)[0] : 'NPR 2,000',
+                        source: 'Colleges Directory'
+                      })
+                      setSelectedCollege(null)
+                    }}
+                    className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-blue-400 border border-slate-700 font-bold transition-all cursor-pointer"
+                  >
+                    + Add to Tracker
+                  </button>
+                )}
+                <button
+                  onClick={() => setSelectedCollege(null)}
+                  className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>

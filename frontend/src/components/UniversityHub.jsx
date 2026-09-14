@@ -4,7 +4,7 @@ import {
   ExternalLink, CheckCircle2, ChevronRight, ShieldCheck, Phone, Mail, Users, GraduationCap, Bot, Sparkles
 } from 'lucide-react'
 
-export default function UniversityHub({ theme, onOpenCopilot }) {
+export default function UniversityHub({ theme, onOpenCopilot, onAddToTracker }) {
   const [universities, setUniversities] = useState([])
   const [colleges, setColleges] = useState([])
   const [selectedCategory, setSelectedCategory] = useState('ALL')
@@ -208,19 +208,33 @@ export default function UniversityHub({ theme, onOpenCopilot }) {
                   )}
                 </div>
 
-                {onOpenCopilot && (
-                  <div className="pt-4 border-t border-slate-800/40 mt-3 flex items-center justify-between">
+                <div className="pt-4 border-t border-slate-800/40 mt-3 flex items-center justify-between gap-2">
+                  {onOpenCopilot && (
                     <button
                       onClick={() => onOpenCopilot(`Tell me about admission, fees, and eligibility for ${college.name} affiliated to ${college.university}`)}
                       className="text-xs font-black text-blue-600 dark:text-blue-400 hover:text-blue-500 flex items-center gap-1 cursor-pointer"
                     >
                       <Bot className="w-3.5 h-3.5" />
-                      <span>Ask AI About This College</span>
+                      <span>Ask AI</span>
                       <ChevronRight className="w-3.5 h-3.5" />
                     </button>
-                    <span className="text-[10px] font-bold text-emerald-500">Verified Listing</span>
-                  </div>
-                )}
+                  )}
+                  {onAddToTracker && (
+                    <button
+                      onClick={() => onAddToTracker({
+                        institution: college.name,
+                        program: college.courses?.[0]?.name || 'Higher Education',
+                        portal_url: college.website || '',
+                        deadline: '2026-10-15',
+                        application_fee: college.courses?.[0]?.full_fee || 'NPR 2,000',
+                        source: 'University Hub Colleges'
+                      })}
+                      className="px-2.5 py-1 rounded-xl bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/30 text-[10px] font-black transition-all cursor-pointer"
+                    >
+                      + Add to Tracker
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
           </div>

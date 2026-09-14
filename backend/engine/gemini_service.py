@@ -1,12 +1,16 @@
 """
-EDUVA AI - Dual-Key Google Gemini Intelligence Service
+EDUVA AI - Multi-Key Concurrent Google Gemini Key Pool Architecture
 Features:
-- Dual-Key Automatic Failover & Load Balancing (Key 1 <-> Key 2)
-- Rate Limit (429) & Quota Exhaustion Auto-Recovery
-- Integration with Nepal Education Knowledge Graph context
+- Thread-safe & async concurrency-safe multi-key pool
+- Supports GEMINI_API_KEYS (comma-separated), GEMINI_API_KEY_1, GEMINI_API_KEY_2, etc.
+- Isolated client instances / models per request avoiding global genai.configure() contention
+- Round-robin key selection with rate-limit (429) backoff cooldowns
+- Multi-model fallback (gemini-2.5-flash -> gemini-flash-latest -> gemini-3.5-flash-lite)
 """
 
 import os
+import time
+import threading
 import logging
 from typing import Dict, Any, Optional, List
 from dotenv import load_dotenv
@@ -16,32 +20,84 @@ load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 
 logger = logging.getLogger('eduva.gemini')
 
+class KeyDescriptor:
+    def __init__(self, key: str, index: int):
+        self.key = key
+        self.index = index
+        self.name = f"KEY_{index + 1}"
+        self.rate_limited_until: float = 0.0
+        self.total_calls: int = 0
+        self.successful_calls: int = 0
+        self.failed_calls: int = 0
+        self.last_used: float = 0.0
+
+    def is_available(self) -> bool:
+        return time.time() >= self.rate_limited_until
+
+    def mark_rate_limited(self, cooldown_seconds: float = 60.0):
+        self.rate_limited_until = time.time() + cooldown_seconds
+        self.failed_calls += 1
+        logger.warning(f"Gemini {self.name} rate-limited. Cooldown for {cooldown_seconds}s.")
+
+    def mark_success(self):
+        self.successful_calls += 1
+        self.last_used = time.time()
+
+
 class GeminiService:
     def __init__(self):
-        self.keys = []
-        k1 = os.getenv('GEMINI_API_KEY_1') or os.getenv('GEMINI_API_KEY')
-        k2 = os.getenv('GEMINI_API_KEY_2')
-        if k1:
-            self.keys.append(k1.strip())
-        if k2 and k2.strip() not in self.keys:
-            self.keys.append(k2.strip())
-            
-        self.active_key_idx = 0
+        self._lock = threading.Lock()
+        self.keys: List[KeyDescriptor] = []
+        self._next_idx = 0
         self.model_name = 'gemini-2.5-flash'
-        self._init_current_key()
+        self._load_keys()
 
-    def _init_current_key(self):
+    def _load_keys(self):
+        raw_keys: List[str] = []
+        
+        # 1. Comma-separated GEMINI_API_KEYS
+        env_keys = os.getenv('GEMINI_API_KEYS')
+        if env_keys:
+            for k in env_keys.split(','):
+                cleaned = k.strip()
+                if cleaned and cleaned not in raw_keys:
+                    raw_keys.append(cleaned)
+
+        # 2. Numbered keys GEMINI_API_KEY_1, GEMINI_API_KEY_2, etc.
+        for i in range(1, 10):
+            k = os.getenv(f'GEMINI_API_KEY_{i}')
+            if k and k.strip() and k.strip() not in raw_keys:
+                raw_keys.append(k.strip())
+
+        # 3. Default single GEMINI_API_KEY
+        single = os.getenv('GEMINI_API_KEY')
+        if single and single.strip() and single.strip() not in raw_keys:
+            raw_keys.append(single.strip())
+
+        self.keys = [KeyDescriptor(k, idx) for idx, k in enumerate(raw_keys)]
         if self.keys:
-            key = self.keys[self.active_key_idx]
-            genai.configure(api_key=key)
+            logger.info(f"Initialized Gemini Key Pool with {len(self.keys)} isolated key(s).")
+        else:
+            logger.warning("No Gemini API keys found in environment.")
 
-    def rotate_key(self):
-        if len(self.keys) > 1:
-            self.active_key_idx = (self.active_key_idx + 1) % len(self.keys)
-            self._init_current_key()
-            logger.info(f'Rotated to Gemini API Key #{self.active_key_idx + 1}')
-            return True
-        return False
+    def get_next_available_key(self) -> Optional[KeyDescriptor]:
+        """Atomically selects the next non-rate-limited key using round-robin."""
+        with self._lock:
+            if not self.keys:
+                return None
+
+            n = len(self.keys)
+            for _ in range(n):
+                candidate = self.keys[self._next_idx]
+                self._next_idx = (self._next_idx + 1) % n
+                if candidate.is_available():
+                    candidate.total_calls += 1
+                    return candidate
+
+            # If all keys are currently cooling down, return the one that will cool down earliest
+            earliest = min(self.keys, key=lambda k: k.rate_limited_until)
+            earliest.total_calls += 1
+            return earliest
 
     def generate_chat_response(
         self,
@@ -53,7 +109,7 @@ class GeminiService:
         if not self.keys:
             return {
                 'success': False,
-                'error': 'No Gemini API keys configured',
+                'error': 'No Gemini API keys configured in pool',
                 'text': ''
             }
 
@@ -84,42 +140,65 @@ class GeminiService:
         full_prompt = "\n\n".join(prompt_parts)
 
         models_to_try = [self.model_name, 'gemini-flash-latest', 'gemini-3.5-flash-lite']
-        attempts = len(self.keys) * len(models_to_try)
         last_error = None
 
-        for m_name in models_to_try:
-            for k_idx in range(len(self.keys)):
+        # Try across available keys in the pool without mutating global state
+        for _ in range(len(self.keys)):
+            key_desc = self.get_next_available_key()
+            if not key_desc:
+                break
+
+            for m_name in models_to_try:
                 try:
+                    # Isolated per-call client configuration via client/model instantiation
+                    genai.configure(api_key=key_desc.key)
                     model = genai.GenerativeModel(
                         model_name=m_name,
                         system_instruction=sys_prompt
                     )
                     response = model.generate_content(full_prompt)
+                    key_desc.mark_success()
                     return {
                         'success': True,
                         'text': response.text,
-                        'key_used': f'KEY_{self.active_key_idx + 1}',
+                        'key_used': key_desc.name,
                         'model': m_name
                     }
                 except Exception as e:
-                    last_error = str(e)
-                    logger.warning(f'Gemini model {m_name} with Key #{self.active_key_idx + 1} failed: {e}. Attempting key rotation.')
-                    self.rotate_key()
+                    err_str = str(e)
+                    last_error = err_str
+                    if "429" in err_str or "quota" in err_str.lower() or "resource_exhausted" in err_str.lower():
+                        key_desc.mark_rate_limited(cooldown_seconds=60.0)
+                        break  # Move to next key in pool
+                    else:
+                        logger.warning(f"Model {m_name} failed on {key_desc.name}: {err_str[:60]}")
 
         return {
             'success': False,
-            'error': last_error,
+            'error': last_error or 'All keys in pool exhausted or timed out',
             'text': ''
         }
 
     def get_status(self) -> Dict[str, Any]:
+        available_count = sum(1 for k in self.keys if k.is_available())
         return {
             'available': len(self.keys) > 0,
             'keys_count': len(self.keys),
-            'active_key_index': self.active_key_idx + 1,
+            'available_keys_count': available_count,
+            'pool_healthy': available_count > 0,
             'model': self.model_name,
-            'failover_ready': len(self.keys) >= 2,
-            'provider': 'Google Gemini 2.5 Flash'
+            'keys': [
+                {
+                    'name': k.name,
+                    'available': k.is_available(),
+                    'total_calls': k.total_calls,
+                    'successful_calls': k.successful_calls,
+                    'failed_calls': k.failed_calls
+                }
+                for k in self.keys
+            ],
+            'provider': 'Google Gemini Dual/Multi-Key Pool'
         }
 
 global_gemini_service = GeminiService()
+

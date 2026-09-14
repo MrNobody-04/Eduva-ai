@@ -182,7 +182,7 @@ export default function CourseIntelligence({ theme }) {
                       <span className="text-[10px] font-black uppercase text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/30">
                         ELIGIBLE
                       </span>
-                      <h4 className="font-bold text-xs mt-2 text-white">{prog.course_name}</h4>
+                      <h4 className="font-bold text-xs mt-2 text-slate-900 dark:text-white">{prog.course_name}</h4>
                       <span className="text-[11px] text-blue-400 font-bold block">{prog.degree_code}</span>
                     </div>
                     <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
