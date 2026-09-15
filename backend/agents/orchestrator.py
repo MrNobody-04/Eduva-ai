@@ -414,13 +414,114 @@ class OrchestratorAgent:
                 global_agent_registry.record_failure(agent_id, task="Drain alerts", error_msg=str(e))
             await asyncio.sleep(interval)
 
+    async def _job_queue_loop(self):
+        """
+        Supervised background worker loop processing persistent SQLite AI jobs
+        via the Central AI Gateway without blocking other agent workflows.
+        """
+        agent_id = "AIJobProcessor"
+        while self.is_running:
+            try:
+                job = global_db.fetch_next_ai_job()
+                if not job:
+                    await asyncio.sleep(1.0)
+                    continue
+
+                job_id = job["job_id"]
+                task_type = job["task_type"]
+                priority = job.get("priority", "NORMAL")
+                preferred = job.get("preferred_provider")
+                payload = job.get("payload", {})
+                prompt = payload.get("prompt", "")
+                system_prompt = payload.get("system_prompt")
+                max_tokens = payload.get("max_tokens", 1024)
+
+                global_db.update_ai_job_status(job_id, status="RUNNING")
+                global_agent_registry.record_heartbeat(agent_id, task=f"Executing {job_id} ({task_type})", status="RUNNING")
+
+                from engine.ai_gateway import global_ai_gateway
+                try:
+                    res = await global_ai_gateway.execute(
+                        task_type=task_type,
+                        prompt=prompt,
+                        system_prompt=system_prompt,
+                        priority=priority,
+                        max_tokens=max_tokens,
+                        preferred_provider=preferred
+                    )
+                    global_db.update_ai_job_status(
+                        job_id,
+                        status="COMPLETED",
+                        assigned_provider=res.get("provider"),
+                        result=res
+                    )
+                    global_agent_registry.record_success(agent_id, task=f"Job {job_id} completed via {res.get('provider')}")
+                except Exception as ex:
+                    attempts = job.get("attempts", 0) + 1
+                    max_attempts = job.get("max_attempts", 3)
+                    next_status = "RETRYING" if attempts < max_attempts else "FAILED"
+                    global_db.update_ai_job_status(
+                        job_id,
+                        status=next_status,
+                        error=str(ex)
+                    )
+                    global_agent_registry.record_failure(agent_id, task=f"Job {job_id}", error_msg=str(ex))
+
+            except Exception as e:
+                print(f"[ERROR in JobQueue Loop]: {e}")
+                await asyncio.sleep(2.0)
+
+    async def _news_loop(self):
+        agent_id = "NewsAgent"
+        interval = 180
+        while self.is_running:
+            try:
+                if not global_agent_registry.can_execute(agent_id):
+                    await asyncio.sleep(15.0)
+                    continue
+
+                global_agent_registry.record_heartbeat(agent_id, task="Auditing news feeds & gazettes", status="RUNNING")
+                from .news_agent import global_news_agent
+                feed = global_news_agent.get_feed(limit=5)
+                global_agent_registry.record_success(agent_id, task=f"News feed active ({len(feed)} items)")
+            except Exception as e:
+                print(f"[ERROR in NewsAgent Loop]: {e}")
+                global_agent_registry.record_failure(agent_id, task="News scan", error_msg=str(e))
+            await asyncio.sleep(interval)
+
+    def enqueue_ai_task(
+        self,
+        task_type: str,
+        prompt: str,
+        system_prompt: Optional[str] = None,
+        priority: str = "NORMAL",
+        preferred_provider: Optional[str] = None,
+        max_tokens: int = 1024,
+        agent_name: str = "Orchestrator"
+    ) -> str:
+        """Helper to enqueue an AI task into the persistent SQLite queue."""
+        payload = {
+            "prompt": prompt,
+            "system_prompt": system_prompt,
+            "max_tokens": max_tokens
+        }
+        return global_db.enqueue_ai_job(
+            task_type=task_type,
+            agent_name=agent_name,
+            payload=payload,
+            priority=priority,
+            preferred_provider=preferred_provider
+        )
+
     async def start_autonomous_loop(self):
         self.is_running = True
         print("[ORCHESTRATOR] 24/7 Autonomous Intelligence: Launching fault-tolerant concurrent agent loops...")
         
         await asyncio.gather(
+            self._job_queue_loop(),
             self._research_loop(),
             self._verification_loop(),
+            self._news_loop(),
             self._admission_scholarship_loop(),
             self._safety_loop(),
             self._notification_loop(),
@@ -428,10 +529,16 @@ class OrchestratorAgent:
         )
 
     def get_system_telemetry(self) -> Dict[str, Any]:
+        queue_metrics = global_db.get_queue_metrics()
+        recent_jobs = global_db.get_ai_jobs(limit=10)
+        provider_usage = global_db.get_provider_usage_summary(window_minutes=60)
         return {
             "current_loop_step": self.current_step,
             "cycle_count": self.cycle_count,
             "is_running": self.is_running,
+            "queue_metrics": queue_metrics,
+            "recent_jobs": recent_jobs,
+            "provider_usage_last_60m": provider_usage,
             "agent_registry_telemetry": global_agent_registry.get_all_telemetry(),
             "agents_status": {
                 "ResearchAgent": self.research_agent.get_status(),

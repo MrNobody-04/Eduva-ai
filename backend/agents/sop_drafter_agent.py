@@ -87,4 +87,59 @@ Yours faithfully,
             "verification_status": "AI_CERTIFIED_ACADEMIC_FORMAT"
         }
 
+    async def generate_document_ai(
+        self,
+        doc_type: str,
+        student_name: str,
+        gpa: str,
+        target_college: str,
+        target_program: str,
+        career_goals: str,
+        financial_need: str = ""
+    ) -> Dict[str, Any]:
+        """
+        Drafts customized, high-standard academic documents powered by AI Gateway (Gemini long context / Groq).
+        """
+        from engine.ai_gateway import global_ai_gateway
+        system_instruction = (
+            "You are an elite academic admissions editor specializing in university applications in Nepal and abroad. "
+            "Write highly compelling, articulate, persuasive academic statements without generic AI clichés. "
+            "Maintain professional institutional tone and incorporate specific program goals."
+        )
+        prompt = (
+            f"Draft a formal {doc_type} for applicant {student_name}.\n"
+            f"Target College: {target_college}\n"
+            f"Target Program: {target_program}\n"
+            f"Academic GPA: {gpa}\n"
+            f"Career Aspirations: {career_goals}\n"
+            f"Financial Background / Need: {financial_need or 'Not specified'}"
+        )
+        try:
+            ai_res = await global_ai_gateway.execute(
+                task_type="SOP_ANALYSIS",
+                prompt=prompt,
+                system_prompt=system_instruction,
+                priority="USER_INTERACTIVE",
+                max_tokens=1500
+            )
+            return {
+                "doc_type": doc_type,
+                "title": f"{doc_type.replace('_', ' ').title()} for {target_college}",
+                "generated_text": ai_res.get("content", "").strip(),
+                "provider": ai_res.get("provider"),
+                "model": ai_res.get("model"),
+                "verification_status": "AI_GATEWAY_CERTIFIED"
+            }
+        except Exception:
+            # Fall back to template
+            return self.generate_document(
+                doc_type=doc_type,
+                student_name=student_name,
+                gpa=gpa,
+                target_college=target_college,
+                target_program=target_program,
+                career_goals=career_goals,
+                financial_need=financial_need
+            )
+
 global_sop_drafter = SopDrafterAgent()

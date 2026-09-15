@@ -16,7 +16,7 @@ from data.all_nepal_universities_comprehensive import get_all_nepal_universities
 from data.all_nepal_colleges_and_results import get_all_nepal_colleges
 from data.nepal_courses_directory import get_all_courses, search_courses
 from engine.eligibility_engine import global_eligibility_engine
-from engine.gemini_service import global_gemini_service
+from engine.ai_gateway import global_ai_gateway
 
 class CopilotAgent:
     def __init__(self, kg: KnowledgeGraph, safety_agent=None):
@@ -96,7 +96,7 @@ class CopilotAgent:
         state.setdefault("history", []).append({"role": "user", "content": user_query})
 
         # 4. Intelligent Intent Classification & Multi-Format Generation
-        response_data = self._route_and_synthesize(query_strip, query_lower, state, lang_label)
+        response_data = await self._route_and_synthesize(query_strip, query_lower, state, lang_label)
         
         # 5. Append assistant turn to conversational memory & persist
         state["history"].append({"role": "assistant", "content": response_data["text"]})
@@ -127,7 +127,7 @@ class CopilotAgent:
             "confidence": 0.99
         }
 
-    def _route_and_synthesize(self, query: str, q_lower: str, state: Dict[str, Any], lang: str) -> Dict[str, Any]:
+    async def _route_and_synthesize(self, query: str, q_lower: str, state: Dict[str, Any], lang: str) -> Dict[str, Any]:
         all_colleges = get_all_nepal_colleges()
         all_univs = get_all_nepal_universities()
         all_courses = get_all_courses()
@@ -282,17 +282,31 @@ class CopilotAgent:
                 }
             }
 
-        # Open-Ended Dialogue powered by Google Gemini 2.5 Flash (with Dual-Key Failover)
-        gemini_res = global_gemini_service.generate_chat_response(
-            user_query=query,
-            context_summary=f"User Stream: {state.get('active_stream')}, Location: {state.get('preferred_location')}, GPA: {state.get('gpa')}, Budget: {state.get('budget', 'Not Specified')}, Target Program: {state.get('active_program', 'Not Specified')}",
-            conversation_history=state.get("history", [])
+        # Open-Ended Dialogue powered by AI Gateway (Groq / Gemini / OpenRouter / Cerebras)
+        sys_instruction = (
+            "You are EDUVA AI, Nepal's premier higher education and university admission counselor. "
+            "Your personality is calm, deeply knowledgeable, encouraging, and honest. "
+            "Speak naturally like an experienced senior educational advisor in Kathmandu. "
+            "Support English, Devanagari Nepali, and Romanized Nepali naturally based on student language. "
+            "Maintain strict zero-hallucination: if an entrance deadline or fee is not verified, advise checking the official university gazette. "
+            "Always reference official institutions (Tribhuvan University, Kathmandu University, Pokhara University, IOE, MEC, MOEST)."
         )
+        context_str = f"User Stream: {state.get('active_stream')}, Location: {state.get('preferred_location')}, GPA: {state.get('gpa')}, Budget: {state.get('budget', 'Not Specified')}, Target Program: {state.get('active_program', 'Not Specified')}"
+        chat_prompt = f"STUDENT PROFILE:\n{context_str}\n\nSTUDENT INQUIRY:\n{query}"
 
-        if gemini_res.get("success") and gemini_res.get("text"):
-            resp = gemini_res["text"].strip()
-            source_badge = f"Google Gemini 2.5 Flash ({gemini_res.get('key_used', 'Active Key')} • Failover Protected)"
-        else:
+        try:
+            ai_res = await global_ai_gateway.execute(
+                task_type="REALTIME_CHAT",
+                prompt=chat_prompt,
+                system_prompt=sys_instruction,
+                priority="USER_INTERACTIVE",
+                max_tokens=800
+            )
+            resp = ai_res.get("content", "").strip()
+            provider_label = ai_res.get("provider", "AI").upper()
+            model_label = ai_res.get("model", "")
+            source_badge = f"{provider_label} ({model_label} • AI Gateway Protected)"
+        except Exception as e:
             if lang in ["NE", "ROMAN_NE"]:
                 resp = "नमस्ते! म EDUVA AI हुँ। म तपाईंलाई नेपालका विश्वविद्यालयहरू, कलेजहरू, B.Sc. CSIT, BCA, इन्जिनियरिङ, मेडिकल, छात्रवृत्ति र प्रवेश परीक्षा (Entrance) बारे आधिकारिक जानकारी दिन सक्छु। तपाईं अहिले कुन कोर्स वा कलेज खोज्दै हुनुहुन्छ?"
             else:

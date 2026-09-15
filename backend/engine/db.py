@@ -218,6 +218,57 @@ class LivingDatabase:
             )
             """)
 
+            # 11. Persistent AI Job Queue
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS ai_jobs (
+                job_id TEXT PRIMARY KEY,
+                task_type TEXT NOT NULL,
+                agent_name TEXT NOT NULL,
+                priority TEXT DEFAULT 'NORMAL',
+                status TEXT DEFAULT 'QUEUED',
+                payload_json TEXT NOT NULL,
+                result_json TEXT,
+                preferred_provider TEXT,
+                assigned_provider TEXT,
+                attempts INTEGER DEFAULT 0,
+                max_attempts INTEGER DEFAULT 3,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                started_at TIMESTAMP,
+                completed_at TIMESTAMP,
+                checkpoint_json TEXT,
+                error_message TEXT
+            )
+            """)
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_ai_jobs_status_prio ON ai_jobs(status, priority, created_at)")
+
+            # 12. Provider Usage & Telemetry Log
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS provider_usage_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                provider TEXT NOT NULL,
+                model TEXT,
+                task_type TEXT,
+                tokens_prompt INTEGER DEFAULT 0,
+                tokens_completion INTEGER DEFAULT 0,
+                latency_ms REAL DEFAULT 0,
+                status TEXT DEFAULT 'SUCCESS',
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """)
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_usage_prov_ts ON provider_usage_log(provider, timestamp)")
+
+            # 13. Content & Source Change Deduplication Cache
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS content_cache (
+                hash_key TEXT PRIMARY KEY,
+                source_uri TEXT,
+                last_sha256 TEXT,
+                cached_result_json TEXT,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """)
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_content_cache_uri ON content_cache(source_uri)")
+
         self._execute_write(create_tables)
 
         # Non-destructive migrations for existing SQLite tables
@@ -862,6 +913,242 @@ class LivingDatabase:
             except Exception:
                 return False
         return False
+
+    # --- Persistent AI Job Queue Methods ---
+    def enqueue_ai_job(
+        self,
+        task_type: str,
+        agent_name: str,
+        payload: Dict[str, Any],
+        priority: str = "NORMAL",
+        preferred_provider: Optional[str] = None,
+        max_attempts: int = 3
+    ) -> str:
+        import uuid
+        job_id = f"job_{uuid.uuid4().hex[:12]}"
+        payload_str = json.dumps(payload, ensure_ascii=False)
+        
+        def _insert(conn):
+            conn.execute("""
+                INSERT INTO ai_jobs (
+                    job_id, task_type, agent_name, priority, status,
+                    payload_json, preferred_provider, max_attempts, created_at
+                ) VALUES (?, ?, ?, ?, 'QUEUED', ?, ?, ?, datetime('now'))
+            """, (job_id, task_type, agent_name, priority.upper(), payload_str, preferred_provider, max_attempts))
+            return job_id
+            
+        return self._execute_write(_insert)
+
+    def fetch_next_ai_job(self, allowed_priorities: Optional[List[str]] = None) -> Optional[Dict[str, Any]]:
+        with self._get_connection() as conn:
+            where_prio = ""
+            params = []
+            if allowed_priorities:
+                placeholders = ",".join(["?"] * len(allowed_priorities))
+                where_prio = f"AND priority IN ({placeholders})"
+                params.extend([p.upper() for p in allowed_priorities])
+                
+            query = f"""
+                SELECT * FROM ai_jobs
+                WHERE status = 'QUEUED' {where_prio}
+                ORDER BY
+                    CASE priority
+                        WHEN 'CRITICAL' THEN 1
+                        WHEN 'USER_INTERACTIVE' THEN 2
+                        WHEN 'HIGH' THEN 3
+                        WHEN 'NORMAL' THEN 4
+                        WHEN 'BACKGROUND' THEN 5
+                        WHEN 'EXPERIMENTAL' THEN 6
+                        ELSE 7
+                    END ASC,
+                    created_at ASC
+                LIMIT 1
+            """
+            cursor = conn.execute(query, params)
+            row = cursor.fetchone()
+            if not row:
+                return None
+            job = dict(row)
+            try:
+                job["payload"] = json.loads(job.get("payload_json") or "{}")
+            except Exception:
+                job["payload"] = {}
+            return job
+
+    def update_ai_job_status(
+        self,
+        job_id: str,
+        status: str,
+        assigned_provider: Optional[str] = None,
+        result: Optional[Any] = None,
+        error: Optional[str] = None,
+        checkpoint: Optional[Dict[str, Any]] = None
+    ) -> bool:
+        def _update(conn):
+            now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+            fields = ["status = ?"]
+            vals = [status.upper()]
+            
+            if status.upper() == "RUNNING":
+                fields.append("started_at = COALESCE(started_at, ?)")
+                vals.append(now)
+                fields.append("attempts = attempts + 1")
+            elif status.upper() in ("COMPLETED", "FAILED"):
+                fields.append("completed_at = ?")
+                vals.append(now)
+                
+            if assigned_provider:
+                fields.append("assigned_provider = ?")
+                vals.append(assigned_provider)
+            if result is not None:
+                fields.append("result_json = ?")
+                vals.append(json.dumps(result, ensure_ascii=False) if not isinstance(result, str) else result)
+            if error is not None:
+                fields.append("error_message = ?")
+                vals.append(str(error))
+            if checkpoint is not None:
+                fields.append("checkpoint_json = ?")
+                vals.append(json.dumps(checkpoint, ensure_ascii=False))
+                
+            vals.append(job_id)
+            query = f"UPDATE ai_jobs SET {', '.join(fields)} WHERE job_id = ?"
+            cursor = conn.execute(query, vals)
+            return cursor.rowcount > 0
+            
+        return self._execute_write(_update)
+
+    def get_ai_jobs(self, limit: int = 50, status: Optional[str] = None) -> List[Dict[str, Any]]:
+        with self._get_connection() as conn:
+            if status:
+                cursor = conn.execute(
+                    "SELECT * FROM ai_jobs WHERE status = ? ORDER BY created_at DESC LIMIT ?",
+                    (status.upper(), limit)
+                )
+            else:
+                cursor = conn.execute(
+                    "SELECT * FROM ai_jobs ORDER BY created_at DESC LIMIT ?",
+                    (limit,)
+                )
+            rows = cursor.fetchall()
+            jobs = []
+            for r in rows:
+                j = dict(r)
+                try:
+                    j["payload"] = json.loads(j.get("payload_json") or "{}")
+                except Exception:
+                    j["payload"] = {}
+                try:
+                    j["result"] = json.loads(j.get("result_json") or "null")
+                except Exception:
+                    j["result"] = j.get("result_json")
+                jobs.append(j)
+            return jobs
+
+    def get_queue_metrics(self) -> Dict[str, Any]:
+        with self._get_connection() as conn:
+            cursor = conn.execute("""
+                SELECT status, COUNT(*) as cnt
+                FROM ai_jobs
+                GROUP BY status
+            """)
+            counts = {row["status"]: row["cnt"] for row in cursor.fetchall()}
+            
+            cursor2 = conn.execute("""
+                SELECT priority, COUNT(*) as cnt
+                FROM ai_jobs
+                WHERE status = 'QUEUED'
+                GROUP BY priority
+            """)
+            prio_counts = {row["priority"]: row["cnt"] for row in cursor2.fetchall()}
+            
+            return {
+                "queued": counts.get("QUEUED", 0),
+                "running": counts.get("RUNNING", 0),
+                "completed": counts.get("COMPLETED", 0),
+                "failed": counts.get("FAILED", 0),
+                "by_priority": prio_counts
+            }
+
+    # --- Provider Usage & Telemetry Logging ---
+    def log_provider_usage(
+        self,
+        provider: str,
+        model: str,
+        task_type: str,
+        tokens_prompt: int = 0,
+        tokens_completion: int = 0,
+        latency_ms: float = 0.0,
+        status: str = "SUCCESS"
+    ):
+        def _log(conn):
+            conn.execute("""
+                INSERT INTO provider_usage_log (
+                    provider, model, task_type, tokens_prompt,
+                    tokens_completion, latency_ms, status, timestamp
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
+            """, (provider.lower(), model, task_type, tokens_prompt, tokens_completion, latency_ms, status))
+        return self._execute_write(_log)
+
+    def get_provider_usage_summary(self, window_minutes: int = 60) -> Dict[str, Any]:
+        with self._get_connection() as conn:
+            cursor = conn.execute("""
+                SELECT
+                    provider,
+                    COUNT(*) as total_requests,
+                    SUM(CASE WHEN status = 'SUCCESS' THEN 1 ELSE 0 END) as success_requests,
+                    SUM(CASE WHEN status != 'SUCCESS' THEN 1 ELSE 0 END) as error_requests,
+                    SUM(tokens_prompt) as total_prompt_tokens,
+                    SUM(tokens_completion) as total_completion_tokens,
+                    AVG(latency_ms) as avg_latency_ms
+                FROM provider_usage_log
+                WHERE timestamp >= datetime('now', ? || ' minutes')
+                GROUP BY provider
+            """, (f"-{window_minutes}",))
+            rows = cursor.fetchall()
+            
+            summary = {}
+            for r in rows:
+                p = r["provider"]
+                summary[p] = {
+                    "total_requests": r["total_requests"],
+                    "success_requests": r["success_requests"],
+                    "error_requests": r["error_requests"],
+                    "total_tokens": (r["total_prompt_tokens"] or 0) + (r["total_completion_tokens"] or 0),
+                    "prompt_tokens": r["total_prompt_tokens"] or 0,
+                    "completion_tokens": r["total_completion_tokens"] or 0,
+                    "avg_latency_ms": round(r["avg_latency_ms"] or 0.0, 1)
+                }
+            return summary
+
+    # --- Content Deduplication & Hash Cache ---
+    def get_content_cache(self, hash_key: str) -> Optional[Dict[str, Any]]:
+        with self._get_connection() as conn:
+            cursor = conn.execute(
+                "SELECT * FROM content_cache WHERE hash_key = ?",
+                (hash_key,)
+            )
+            row = cursor.fetchone()
+            if not row:
+                return None
+            res = dict(row)
+            try:
+                res["cached_result"] = json.loads(res.get("cached_result_json") or "null")
+            except Exception:
+                res["cached_result"] = res.get("cached_result_json")
+            return res
+
+    def set_content_cache(self, hash_key: str, source_uri: str, last_sha256: str, cached_result: Any):
+        cached_str = json.dumps(cached_result, ensure_ascii=False) if not isinstance(cached_result, str) else cached_result
+        def _set(conn):
+            conn.execute("""
+                INSERT INTO content_cache (hash_key, source_uri, last_sha256, cached_result_json, updated_at)
+                VALUES (?, ?, ?, ?, datetime('now'))
+                ON CONFLICT(hash_key) DO UPDATE SET
+                    last_sha256 = EXCLUDED.last_sha256,
+                    cached_result_json = EXCLUDED.cached_result_json,
+                    updated_at = datetime('now')
+            """, (hash_key, source_uri, last_sha256, cached_str))
+        return self._execute_write(_set)
 
 
 # Global DB Instance

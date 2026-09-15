@@ -37,6 +37,42 @@ class VerificationAgent:
         for gap in pending_gaps[:3]:
             gap.status = "VERIFYING"
 
+    async def execute_verification(self, claim: str, source_context: str = "") -> Dict[str, Any]:
+        """
+        Executes strict factual cross-checking and contradiction detection via AI Gateway (Cerebras / Gemini).
+        """
+        from engine.ai_gateway import global_ai_gateway
+        system_instruction = (
+            "You are Eduva AI Verification Agent. Your mandate is absolute zero-hallucination fact verification. "
+            "Analyze the submitted claim against official Nepal higher education rules (TU, KU, PokU, IOE, MEC). "
+            "Identify any contradictions, date mismatches, or false claims. "
+            "Return: VERDICT: VERIFIED | UNVERIFIED | CONTRADICTORY, CONFIDENCE (0.0 - 1.0), and REASONING."
+        )
+        prompt = f"CLAIM TO VERIFY:\n{claim}\n\nCONTEXT / SOURCES:\n{source_context or 'Official Nepal gazettes'}"
+        try:
+            ai_res = await global_ai_gateway.execute(
+                task_type="VERIFICATION",
+                prompt=prompt,
+                system_prompt=system_instruction,
+                priority="NORMAL",
+                max_tokens=600
+            )
+            content = ai_res.get("content", "")
+            is_verified = "VERDICT: VERIFIED" in content or "VERIFIED" in content.upper()
+            if is_verified:
+                self.verified_count += 1
+            else:
+                self.rejected_count += 1
+
+            return {
+                "status": "VERIFIED" if is_verified else "REJECTED",
+                "analysis": content,
+                "provider": ai_res.get("provider"),
+                "model": ai_res.get("model")
+            }
+        except Exception as e:
+            return {"status": "ERROR", "error": str(e)}
+
     def verify_candidate_update(self, source_id: str, change_data: Dict[str, Any]) -> Dict[str, Any]:
         source = self.kg.sources.get(source_id)
         if not source:

@@ -81,7 +81,48 @@ class NewsAgent:
             category=category,
             is_breaking=True
         )
-        return post_id
+    async def generate_news_update(self, raw_notice: str, source: str = "Official Gazette") -> Dict[str, Any]:
+        """
+        Synthesizes and classifies incoming educational bulletins via AI Gateway (Groq / Cerebras).
+        """
+        from engine.ai_gateway import global_ai_gateway
+        system_instruction = (
+            "You are Eduva AI News Reporter. Condense raw academic notices into a punchy, factual bulletin. "
+            "Extract: Title (with emoji), category (ENTRANCE_EXAM, SCHOLARSHIP, WEATHER_ALERT, NEW_PROGRAM), and 2-sentence summary. "
+            "Output JSON with keys: 'title', 'category', 'content'."
+        )
+        prompt = f"SOURCE: {source}\nRAW NOTICE:\n{raw_notice}"
+        try:
+            ai_res = await global_ai_gateway.execute(
+                task_type="NEWS_CLASSIFICATION",
+                prompt=prompt,
+                system_prompt=system_instruction,
+                priority="BACKGROUND",
+                max_tokens=300
+            )
+            import json
+            raw_text = ai_res.get("content", "")
+            # Clean markdown code blocks if present
+            if "```" in raw_text:
+                raw_text = raw_text.split("```")[1]
+                if raw_text.startswith("json"):
+                    raw_text = raw_text[4:]
+            data = json.loads(raw_text)
+            post_id = self.publish_breaking_post(
+                title=data.get("title", f"Notice from {source}"),
+                content=data.get("content", raw_notice[:200]),
+                source=source,
+                category=data.get("category", "OFFICIAL_NOTICE")
+            )
+            return {"status": "PUBLISHED", "post_id": post_id, "provider": ai_res.get("provider")}
+        except Exception:
+            # Fallback simple publish
+            post_id = self.publish_breaking_post(
+                title=f"Important Bulletin from {source}",
+                content=raw_notice[:300],
+                source=source
+            )
+            return {"status": "FALLBACK_PUBLISHED", "post_id": post_id}
 
 # Global News Agent
 global_news_agent = NewsAgent()

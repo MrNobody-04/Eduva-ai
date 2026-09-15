@@ -14,6 +14,14 @@ class ResearchAgent:
             {"id": "rq_3", "task": "Resolve knowledge gap for Pokhara University hostel fees", "priority": "LOW", "status": "QUEUED"},
             {"id": "rq_4", "task": "Corroborate KUCAT computer-based test shift schedule", "priority": "HIGH", "status": "QUEUED"}
         ]
+        self.active_university_index = 0
+        self.universities_catalog_checklist = [
+            "Tribhuvan University", "Kathmandu University", "Pokhara University",
+            "Purbanchal University", "Nepal Sanskrit University", "Lumbini Bauddha University",
+            "Agriculture and Forestry University", "Mid-Western University", "Far-Western University",
+            "Nepal Open University", "Rajarshi Janak University", "Manmohan Technical University",
+            "Madan Bhandari University of Science and Technology", "Gandaki University"
+        ]
         self.event_bus.subscribe("PORTAL_CHANGE_DETECTED", self.handle_portal_change)
 
     async def handle_portal_change(self, event: EduvaEvent):
@@ -124,6 +132,47 @@ class ResearchAgent:
             "priority": priority,
             "status": "QUEUED"
         })
+
+    async def execute_research(self, topic: str, context: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Executes deep autonomous research via AI Gateway (Gemini 2.5 Pro/Flash, OpenRouter).
+        """
+        from engine.ai_gateway import global_ai_gateway
+        system_instruction = (
+            "You are Eduva AI Research Agent specializing in Nepal higher education. "
+            "Extract authoritative facts: eligibility, fees, seat quotas, affiliation, entrance requirements. "
+            "Never invent details. Return a concise, structured analysis with source references."
+        )
+        prompt = f"RESEARCH TOPIC:\n{topic}\n\nADDITIONAL CONTEXT:\n{context or 'None'}"
+        try:
+            ai_res = await global_ai_gateway.execute(
+                task_type="DEEP_RESEARCH",
+                prompt=prompt,
+                system_prompt=system_instruction,
+                priority="HIGH",
+                max_tokens=1200
+            )
+            # Emit research completed event
+            await self.event_bus.publish(EduvaEvent(
+                event_type="RESEARCH_COMPLETED",
+                agent_source=self.name,
+                confidence=0.95,
+                data={
+                    "topic": topic,
+                    "provider": ai_res.get("provider"),
+                    "model": ai_res.get("model"),
+                    "summary": ai_res.get("content", "")[:300]
+                }
+            ))
+            return {
+                "status": "SUCCESS",
+                "topic": topic,
+                "findings": ai_res.get("content", ""),
+                "provider": ai_res.get("provider"),
+                "model": ai_res.get("model")
+            }
+        except Exception as e:
+            return {"status": "FAILED", "topic": topic, "error": str(e)}
 
     def get_status(self) -> Dict[str, Any]:
         return {
