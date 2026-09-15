@@ -39,6 +39,7 @@ from engine.auth import (
 from engine.rate_limiter import limiter, check_ws_rate_limit, RateLimitExceeded, _rate_limit_exceeded_handler
 from engine.notification_stream import global_notification_broadcaster
 from engine.agent_registry import global_agent_registry
+from engine.provider_health import global_provider_health
 
 from agents.research_agent import ResearchAgent
 from agents.verification_agent import VerificationAgent
@@ -1326,7 +1327,45 @@ async def get_providers_status():
         "concurrency": {
             "max_global": global_ai_gateway.max_global_concurrency,
             "quota_reserve_percent": global_ai_gateway.quota_reserve_pct
-        }
+        },
+        "diagnostics": global_provider_health.get_cached_diagnostics()
+    }
+
+
+@app.get("/api/providers/health")
+async def get_providers_health():
+    """Returns cached/latest 5-provider health diagnostics without hitting APIs."""
+    return {
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "providers": global_provider_health.get_cached_diagnostics()
+    }
+
+
+@app.post("/api/providers/health-check", dependencies=[Depends(verify_admin_key)])
+@limiter.limit("5/minute")
+async def trigger_provider_health_check(request: Request):
+    """
+    Administrative trigger for live concurrent 5-provider diagnostics check.
+    Protected by Admin authorization and rate-limited to 5/minute to avoid quota exhaustion.
+    """
+    results = await global_provider_health.run_diagnostics(force=True)
+    return {
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "status": "COMPLETED",
+        "providers": results
+    }
+
+
+@app.get("/api/providers/gemini/keys", dependencies=[Depends(verify_admin_key)])
+@limiter.limit("5/minute")
+async def diagnose_gemini_keys(request: Request):
+    """
+    Administrative diagnostic endpoint for individual Gemini key pool inspection.
+    Never exposes key values or secrets.
+    """
+    return {
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "keys": global_gemini_service.diagnose_all_keys()
     }
 
 

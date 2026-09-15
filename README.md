@@ -59,6 +59,49 @@ npm install
 npm run dev
 ```
 
+---
+
+## 5-Provider Parallel Multi-Agent Architecture
+
+Eduva AI implements a non-blocking, parallel multi-agent architecture orchestrated through a centralized **AI Gateway** operating across exactly five configured providers:
+
+```text
+                                EDUVA MASTER ORCHESTRATOR
+                                            │
+           ┌────────────────────────┬───────┴────────┬────────────────────────┐
+           ▼                        ▼                ▼                        ▼
+     ResearchAgent          VerificationAgent   CopilotAgent          SafetyAgent /
+   (Autonomous Scan)       (Contradiction Check)  (Realtime Chat)     News / Notification
+           │                        │                │                        │
+           └────────────────────────┴───────┬────────┴────────────────────────┘
+                                            ▼
+                             CENTRAL INTELLIGENT AI GATEWAY
+                        (Routing, Concurrency, Quotas, Circuits)
+                                            │
+         ┌───────────────────┬──────────────┼──────────────┬───────────────────┐
+         ▼                   ▼              ▼              ▼                   ▼
+       Groq               Cerebras        Gemini       OpenRouter           Ollama
+    (Realtime /         (Ultra-Fast    (google-genai     (Model             (Local /
+    Classification)     Fact Check)      Deep Logic)    Diversity)          Private)
+```
+
+### The 5 Configured Providers
+1. **Google Gemini**: Deep multi-step reasoning, admissions criteria parsing, and syllabus analysis via the official `google-genai` SDK. Supports a multi-key pool (`GEMINI_API_KEYS`, `GEMINI_API_KEY_1`, `GEMINI_API_KEY_2`) with round-robin rotation, 60s cooldown on 429 rate limits, and failure isolation.
+2. **Cerebras Cloud**: Ultra-fast fact-checking, entity cross-referencing, and verification subtasks. Includes dynamic model discovery and strict status classification (`CONNECTED`, `PAYMENT_REQUIRED`, `MODEL_UNAVAILABLE`, `RATE_LIMITED`).
+3. **Groq**: Sub-second conversational responses for the student copilot, intent classification, and safety scanning via high-throughput Llama/Qwen models.
+4. **OpenRouter**: Frontier model diversity and secondary consensus opinions, ensuring zero vendor lock-in.
+5. **Ollama**: Local and on-premise private inference daemon with strict server-side URL validation and SSRF protection.
+
+### Intelligent Reliability Features
+* **Dynamic Capability Routing**: Each agent task (`REALTIME_CHAT`, `DEEP_RESEARCH`, `VERIFICATION`, `SOP_ANALYSIS`, `SAFETY_CLASSIFICATION`) maps to a ranked provider fallback chain.
+* **Per-Provider Circuit Breakers**: Independent failure counters automatically trip failing or rate-limited providers to `OPEN`, entering `HALF_OPEN` canary probes before recovering back to `CLOSED`.
+* **5 Quota Protection Tiers**: Tracks sliding-window RPM against provider limits. Progressively sheds non-essential tasks (`NORMAL` → `CAUTIOUS` → `BACKGROUND_THROTTLING` → `HIGH_CRITICAL_ONLY` → `EMERGENCY_PROTECTION`), reserving capacity for student interactive chats and critical alerts.
+* **Content Deduplication Cache**: Computes SHA-256 digests over inputs and queries, instantly serving cached responses (0.0ms latency, 0 tokens consumed) on repeated scans.
+* **Persistent SQLite Job Queue & Crash Recovery**: High-priority tasks persist in `ai_jobs`. If the server reboots, `reconcile_abandoned_jobs()` automatically restores interrupted `RUNNING` tasks back to `QUEUED`.
+* **Lightweight Concurrent Diagnostics**: Built-in diagnostics (`python backend/run_provider_diagnostics.py` and `GET /api/providers/health`) run safe, minimal-token health checks concurrently across all 5 providers without exhausting free-tier quotas or leaking credentials.
+
+> *Eduva dynamically routes workloads across configured providers, protects quota headroom, applies adaptive throttling, and automatically fails over when a provider becomes unavailable.*
+
 Visit: `http://127.0.0.1:5173` (Frontend) | `http://127.0.0.1:8000/docs` (FastAPI Swagger UI)
 
 ---

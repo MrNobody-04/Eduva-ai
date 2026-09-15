@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react'
 import { 
   Cpu, Activity, Database, ShieldAlert, Sparkles, RefreshCw, 
-  CheckCircle2, Clock, Play, FileCode, Server, Layers, AlertCircle
+  CheckCircle2, Clock, Play, FileCode, Server, Layers, AlertCircle,
+  AlertTriangle, XCircle, WifiOff
 } from 'lucide-react'
 
 export default function AIControlCenter({ theme }) {
   const [telemetry, setTelemetry] = useState(null)
   const [dbStatus, setDbStatus] = useState(null)
   const [geminiStatus, setGeminiStatus] = useState(null)
+  const [providerHealth, setProviderHealth] = useState(null)
+  const [isCheckingHealth, setIsCheckingHealth] = useState(false)
+  const [healthError, setHealthError] = useState(null)
   const [loading, setLoading] = useState(true)
   const [simQuery, setSimQuery] = useState('Apex College BCA Kathmandu')
   const [simResult, setSimResult] = useState(null)
@@ -16,15 +20,20 @@ export default function AIControlCenter({ theme }) {
 
   // Connect to live /ws/telemetry WebSocket stream
   useEffect(() => {
-    // Initial fetch for database and gemini status
+    // Initial fetch for database, gemini, and provider health status
     const fetchAuxiliaryStatus = async () => {
       try {
-        const [resDb, resGemini] = await Promise.all([
+        const [resDb, resGemini, resHealth] = await Promise.all([
           fetch('/api/database/status'),
-          fetch('/api/gemini/status')
+          fetch('/api/gemini/status'),
+          fetch('/api/providers/health')
         ])
         if (resDb.ok) setDbStatus(await resDb.json())
         if (resGemini.ok) setGeminiStatus(await resGemini.json())
+        if (resHealth.ok) {
+          const hData = await resHealth.json()
+          setProviderHealth(hData.providers || {})
+        }
       } catch (err) {
         console.warn('Status fetch error:', err)
       } finally {
@@ -133,6 +142,28 @@ export default function AIControlCenter({ theme }) {
     }
   }
 
+  const handleRunProviderDiagnostics = async () => {
+    setIsCheckingHealth(true)
+    setHealthError(null)
+    try {
+      const res = await fetch('/api/providers/health-check', {
+        method: 'POST',
+        headers: getHeaders()
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setProviderHealth(data.providers || {})
+      } else {
+        const errData = await res.json()
+        setHealthError(errData.detail || errData.error?.message || 'Admin authorization required for live diagnostics')
+      }
+    } catch (err) {
+      setHealthError(err.message || 'Diagnostic network error')
+    } finally {
+      setIsCheckingHealth(false)
+    }
+  }
+
   return (
     <div className="space-y-8 animate-fadeIn w-full max-w-full overflow-hidden">
       {/* Banner */}
@@ -221,38 +252,115 @@ export default function AIControlCenter({ theme }) {
           </div>
         )}
 
-        {/* Google Gemini Dual-Key Failover Engine Status */}
-        {geminiStatus && (
-          <div className="mt-3 p-4 rounded-2xl bg-blue-500/10 border border-blue-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs animate-fadeIn">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
-                <Sparkles className="w-4 h-4 animate-pulse" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-black text-blue-400">Google Gemini 2.5 Flash Intelligence</span>
-                  <span className="px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 font-mono text-[10px] font-bold">
-                    {geminiStatus.keys_count} API KEYS • DUAL FAILOVER ACTIVE
-                  </span>
-                </div>
-                <span className={`text-[11px] block mt-0.5 ${theme === 'dark' ? 'text-gray-400' : 'text-slate-600'}`}>
-                  Active: Key #{geminiStatus.active_key_index} • Multi-Key Load Balancing & Rate-Limit Guard
+        {/* EDUVA AI 5-PROVIDER RUNTIME STATUS & DIAGNOSTICS */}
+        <div className="mt-4 pt-4 border-t border-gray-800/50">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black uppercase tracking-wider text-blue-400">
+                  5-Provider Infrastructure
+                </span>
+                <span className="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 font-mono text-[9px] font-bold">
+                  CENTRAL AI GATEWAY
                 </span>
               </div>
+              <h4 className="text-sm font-black tracking-tight text-white mt-0.5">
+                EDUVA AI Provider Runtime Status
+              </h4>
             </div>
-            <div className="flex items-center gap-4 text-[11px] font-mono shrink-0">
-              <div className="text-center sm:text-right">
-                <span className="text-gray-400 block text-[9px] uppercase">Model</span>
-                <span className="font-bold text-blue-400">{geminiStatus.model}</span>
-              </div>
-              <div className="h-6 w-px bg-blue-500/30 hidden sm:block" />
-              <div className="flex items-center gap-1.5 text-blue-400 font-bold">
-                <CheckCircle2 className="w-4 h-4" />
-                <span>Ready</span>
-              </div>
-            </div>
+            
+            <button
+              onClick={handleRunProviderDiagnostics}
+              disabled={isCheckingHealth}
+              className="px-3 py-1.5 rounded-xl bg-blue-600/20 border border-blue-500/40 text-blue-400 hover:bg-blue-600/30 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 self-start sm:self-auto"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isCheckingHealth ? 'animate-spin' : ''}`} />
+              <span>{isCheckingHealth ? 'Testing Providers...' : 'Run Diagnostic Check'}</span>
+            </button>
           </div>
-        )}
+
+          {healthError && (
+            <div className="mb-3 p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{healthError}</span>
+            </div>
+          )}
+
+          {/* 5-Card Responsive Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            {[
+              { id: 'gemini', name: 'Gemini', desc: 'Deep Logic & Research' },
+              { id: 'cerebras', name: 'Cerebras', desc: 'Ultra-Fast Fact Check' },
+              { id: 'groq', name: 'Groq', desc: 'Realtime Chat & NLP' },
+              { id: 'openrouter', name: 'OpenRouter', desc: 'Model Diversity' },
+              { id: 'ollama', name: 'Ollama', desc: 'Local / Private Daemon' }
+            ].map(p => {
+              const info = providerHealth ? providerHealth[p.id] : null
+              const status = info ? info.status : 'NOT_CHECKED'
+              const isConnected = status === 'CONNECTED'
+              const isWarning = status === 'PAYMENT_REQUIRED' || status === 'RATE_LIMITED'
+              const isDown = status === 'MODEL_UNAVAILABLE' || status === 'AUTH_FAILED' || status === 'NETWORK_ERROR' || status === 'TIMEOUT' || status === 'PROVIDER_ERROR'
+              
+              const badgeStyle = isConnected
+                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                : isWarning
+                ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
+                : isDown
+                ? 'bg-rose-500/10 border-rose-500/30 text-rose-400'
+                : 'bg-slate-500/10 border-slate-500/30 text-slate-400'
+
+              const dotColor = isConnected
+                ? 'bg-emerald-400 animate-pulse'
+                : isWarning
+                ? 'bg-amber-400'
+                : isDown
+                ? 'bg-rose-400'
+                : 'bg-slate-400'
+
+              return (
+                <div 
+                  key={p.id}
+                  className={`p-3.5 rounded-2xl border transition-all duration-200 flex flex-col justify-between ${
+                    theme === 'dark' 
+                      ? 'bg-gray-800/60 border-gray-700/60 hover:border-gray-600' 
+                      : 'bg-slate-50 border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-1 mb-2">
+                      <span className="font-black text-xs tracking-tight">{p.name}</span>
+                      <span className={`px-2 py-0.5 rounded-full border text-[10px] font-bold flex items-center gap-1.5 shrink-0 ${badgeStyle}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`} />
+                        <span>{status.replace(/_/g, ' ')}</span>
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-gray-400 block mb-2">{p.desc}</span>
+                  </div>
+
+                  <div className="pt-2 border-t border-gray-700/40 text-[11px] font-mono space-y-1">
+                    <div className="flex items-center justify-between text-gray-400 text-[10px]">
+                      <span>Model:</span>
+                      <span className="font-bold text-blue-400 truncate max-w-[110px]" title={info?.model || 'none'}>
+                        {info?.model || 'none'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-gray-400 text-[10px]">
+                      <span>Latency:</span>
+                      <span className="font-bold text-gray-200">
+                        {info?.latency_ms ? `${info.latency_ms}ms` : '—'}
+                      </span>
+                    </div>
+                    {info?.message && !isConnected && (
+                      <p className="text-[9px] text-gray-400 mt-1 line-clamp-2" title={info.message}>
+                        {info.message}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
       </div>
 
       {/* Autonomous College Discovery Simulation Suite */}

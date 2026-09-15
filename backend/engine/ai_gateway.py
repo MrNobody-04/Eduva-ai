@@ -158,13 +158,19 @@ class AIGateway:
         # Underlying Gemini Service
         self.gemini_service = GeminiService()
 
-        # Preferred Models per Provider
+        # Preferred Models per Provider (dynamically configurable with verified fallbacks)
+        cerebras_env_model = os.getenv("CEREBRAS_MODEL", "").strip()
+        cerebras_candidates = [cerebras_env_model] if cerebras_env_model else []
+        for m in ["llama3.1-8b", "llama-3.3-70b", "qwen-3.8-27b", "gpt-oss-120b"]:
+            if m not in cerebras_candidates:
+                cerebras_candidates.append(m)
+
         self.provider_models = {
-            "groq": ["qwen/qwen3.8-27b", "groq/compound-mini", "openai/gpt-oss-120b"],
-            "cerebras": ["gpt-oss-120b", "qwen-3.8-27b", "gemma-4-31b"],
-            "openrouter": ["meta-llama/llama-3.3-70b-instruct", "google/gemini-2.0-flash-exp:free"],
-            "gemini": ["gemini-2.5-flash", "gemini-flash-latest"],
-            "ollama": ["llama3", "mistral"]
+            "groq": [os.getenv("GROQ_MODEL", "qwen/qwen3.8-27b"), "groq/compound-mini", "openai/gpt-oss-120b"],
+            "cerebras": cerebras_candidates,
+            "openrouter": [os.getenv("OPENROUTER_MODEL", "meta-llama/llama-3.3-70b-instruct"), "google/gemini-2.0-flash-exp:free"],
+            "gemini": [os.getenv("GEMINI_MODEL", "gemini-2.5-flash"), "gemini-flash-latest"],
+            "ollama": [os.getenv("OLLAMA_MODEL", "llama3"), "mistral"]
         }
 
         # Capability Routing Matrix
@@ -273,7 +279,9 @@ class AIGateway:
         def _invoke():
             return self.gemini_service.generate_chat_response(
                 user_query=prompt,
-                system_instruction=system_prompt
+                system_instruction=system_prompt,
+                max_tokens=max_tokens,
+                temperature=temperature
             )
 
         resp = await asyncio.to_thread(_invoke)

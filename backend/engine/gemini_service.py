@@ -1,11 +1,13 @@
 """
 EDUVA AI - Multi-Key Concurrent Google Gemini Key Pool Architecture
+Migrated to modern official `google-genai` SDK.
 Features:
 - Thread-safe & async concurrency-safe multi-key pool
 - Supports GEMINI_API_KEYS (comma-separated), GEMINI_API_KEY_1, GEMINI_API_KEY_2, etc.
-- Isolated client instances / models per request avoiding global genai.configure() contention
+- Isolated client instances per request avoiding global configure contention
 - Round-robin key selection with rate-limit (429) backoff cooldowns
-- Multi-model fallback (gemini-2.5-flash -> gemini-flash-latest -> gemini-3.5-flash-lite)
+- Multi-model fallback (gemini-2.5-flash -> gemini-flash-latest -> gemini-2.0-flash-exp)
+- Lightweight health checks & multi-key diagnostics (zero key secret leakage)
 """
 
 import os
@@ -14,7 +16,8 @@ import threading
 import logging
 from typing import Dict, Any, Optional, List
 from dotenv import load_dotenv
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 
@@ -49,7 +52,7 @@ class GeminiService:
         self._lock = threading.Lock()
         self.keys: List[KeyDescriptor] = []
         self._next_idx = 0
-        self.model_name = 'gemini-2.5-flash'
+        self.model_name = os.getenv('GEMINI_MODEL', 'gemini-2.5-flash')
         self._load_keys()
 
     def _load_keys(self):
@@ -104,7 +107,9 @@ class GeminiService:
         user_query: str,
         context_summary: str = '',
         conversation_history: Optional[List[Dict[str, str]]] = None,
-        system_instruction: Optional[str] = None
+        system_instruction: Optional[str] = None,
+        max_tokens: int = 800,
+        temperature: float = 0.7
     ) -> Dict[str, Any]:
         if not self.keys:
             return {
@@ -139,28 +144,33 @@ class GeminiService:
         
         full_prompt = "\n\n".join(prompt_parts)
 
-        models_to_try = [self.model_name, 'gemini-flash-latest', 'gemini-3.5-flash-lite']
+        models_to_try = [self.model_name, 'gemini-flash-latest', 'gemini-2.0-flash-exp']
         last_error = None
 
-        # Try across available keys in the pool without mutating global state
+        # Try across available keys in the pool using modern isolated Client instances
         for _ in range(len(self.keys)):
             key_desc = self.get_next_available_key()
             if not key_desc:
                 break
 
+            client = genai.Client(api_key=key_desc.key)
+
             for m_name in models_to_try:
                 try:
-                    # Isolated per-call client configuration via client/model instantiation
-                    genai.configure(api_key=key_desc.key)
-                    model = genai.GenerativeModel(
-                        model_name=m_name,
-                        system_instruction=sys_prompt
+                    config = types.GenerateContentConfig(
+                        system_instruction=sys_prompt,
+                        max_output_tokens=max_tokens,
+                        temperature=temperature
                     )
-                    response = model.generate_content(full_prompt)
+                    response = client.models.generate_content(
+                        model=m_name,
+                        contents=full_prompt,
+                        config=config
+                    )
                     key_desc.mark_success()
                     return {
                         'success': True,
-                        'text': response.text,
+                        'text': response.text or '',
                         'key_used': key_desc.name,
                         'model': m_name
                     }
@@ -171,13 +181,89 @@ class GeminiService:
                         key_desc.mark_rate_limited(cooldown_seconds=60.0)
                         break  # Move to next key in pool
                     else:
-                        logger.warning(f"Model {m_name} failed on {key_desc.name}: {err_str[:60]}")
+                        logger.warning(f"Model {m_name} failed on {key_desc.name}: {err_str[:80]}")
 
         return {
             'success': False,
             'error': last_error or 'All keys in pool exhausted or timed out',
             'text': ''
         }
+
+    def check_health(self, key_desc: Optional[KeyDescriptor] = None) -> Dict[str, Any]:
+        """
+        Lightweight health check using modern google-genai SDK.
+        Issues a minimal 2-token generation request to verify connectivity without consuming quota.
+        """
+        target_key = key_desc or self.get_next_available_key()
+        if not target_key:
+            return {
+                "status": "NOT_CONFIGURED",
+                "model": self.model_name,
+                "latency_ms": 0.0,
+                "error_category": "NOT_CONFIGURED",
+                "message": "No Gemini API keys configured in pool",
+                "key_used": None
+            }
+
+        start_time = time.time()
+        client = genai.Client(api_key=target_key.key)
+        try:
+            resp = client.models.generate_content(
+                model=self.model_name,
+                contents="Respond with OK.",
+                config=types.GenerateContentConfig(
+                    max_output_tokens=2,
+                    temperature=0.0
+                )
+            )
+            latency_ms = round((time.time() - start_time) * 1000.0, 1)
+            target_key.mark_success()
+            return {
+                "status": "CONNECTED",
+                "model": self.model_name,
+                "latency_ms": latency_ms,
+                "error_category": None,
+                "message": "Gemini connected and responding",
+                "key_used": target_key.name
+            }
+        except Exception as e:
+            latency_ms = round((time.time() - start_time) * 1000.0, 1)
+            err_str = str(e)
+            if "429" in err_str or "quota" in err_str.lower() or "resource_exhausted" in err_str.lower():
+                target_key.mark_rate_limited(cooldown_seconds=60.0)
+                status = "RATE_LIMITED"
+            elif "401" in err_str or "403" in err_str or "permission" in err_str.lower() or "api_key" in err_str.lower():
+                status = "AUTH_FAILED"
+            elif "404" in err_str or "not found" in err_str.lower():
+                status = "MODEL_UNAVAILABLE"
+            else:
+                status = "PROVIDER_ERROR"
+
+            return {
+                "status": status,
+                "model": self.model_name,
+                "latency_ms": latency_ms,
+                "error_category": status,
+                "message": f"Gemini {target_key.name}: {status}",
+                "key_used": target_key.name
+            }
+
+    def diagnose_all_keys(self) -> List[Dict[str, Any]]:
+        """
+        Administrative multi-key diagnostic:
+        Tests each configured Gemini key individually with minimal ping.
+        Returns safe telemetry with ZERO key value leakage.
+        """
+        results = []
+        for k in self.keys:
+            res = self.check_health(key_desc=k)
+            results.append({
+                "key_name": k.name,
+                "status": res["status"],
+                "latency_ms": res["latency_ms"],
+                "message": res["message"]
+            })
+        return results
 
     def get_status(self) -> Dict[str, Any]:
         available_count = sum(1 for k in self.keys if k.is_available())
@@ -197,8 +283,7 @@ class GeminiService:
                 }
                 for k in self.keys
             ],
-            'provider': 'Google Gemini Dual/Multi-Key Pool'
+            'provider': 'Google Gemini Dual/Multi-Key Pool (google-genai SDK)'
         }
 
 global_gemini_service = GeminiService()
-
