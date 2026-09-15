@@ -28,6 +28,9 @@ class LivingDatabase:
         conn.execute("PRAGMA busy_timeout=10000;")
         return conn
 
+    def get_connection(self):
+        return self._get_connection()
+
     def _execute_write(self, query_fn, max_retries: int = 5, base_delay: float = 0.05):
         """
         Executes a database write with exponential backoff and jitter on lock/busy errors.
@@ -1016,6 +1019,34 @@ class LivingDatabase:
             return cursor.rowcount > 0
             
         return self._execute_write(_update)
+
+    def reconcile_abandoned_jobs(self, force_all_running: bool = False) -> int:
+        """
+        Reconciles abandoned RUNNING jobs following a process crash or restart.
+        Moves retryable jobs back to QUEUED, or marks as FAILED if max_attempts reached.
+        """
+        def _reconcile(conn):
+            cursor = conn.cursor()
+            cursor.execute("SELECT job_id, attempts, max_attempts FROM ai_jobs WHERE status = 'RUNNING'")
+            running = cursor.fetchall()
+            reconciled = 0
+            for r in running:
+                job_id = r["job_id"]
+                attempts = r["attempts"] or 1
+                max_att = r["max_attempts"] or 3
+                if attempts < max_att:
+                    cursor.execute(
+                        "UPDATE ai_jobs SET status = 'QUEUED', error_message = 'Reconciled from interrupted execution' WHERE job_id = ?",
+                        (job_id,)
+                    )
+                else:
+                    cursor.execute(
+                        "UPDATE ai_jobs SET status = 'FAILED', error_message = 'Max attempts reached during crash recovery' WHERE job_id = ?",
+                        (job_id,)
+                    )
+                reconciled += 1
+            return reconciled
+        return self._execute_write(_reconcile)
 
     def get_ai_jobs(self, limit: int = 50, status: Optional[str] = None) -> List[Dict[str, Any]]:
         with self._get_connection() as conn:

@@ -225,6 +225,10 @@ class AgentHealthRegistry:
             "consecutive_failures": agent["consecutive_failures"]
         })
 
+    def get_agent_telemetry(self, agent_id: str) -> Optional[Dict[str, Any]]:
+        """Returns the in-memory and persisted telemetry record for an agent."""
+        return self.agents.get(agent_id)
+
     def persist_agent_to_db(self, agent_id: str):
         agent = self.agents.get(agent_id)
         if not agent:

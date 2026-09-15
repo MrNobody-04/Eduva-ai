@@ -266,7 +266,7 @@ async def require_admin_user(
     - 403 if authenticated user does not have admin role
     """
     # 1. Check API Key
-    provided_key = key_from_header
+    provided_key = key_from_header or request.headers.get("X-Admin-Key")
     if not provided_key:
         auth_header = request.headers.get("Authorization", "")
         if auth_header.startswith("Bearer "):

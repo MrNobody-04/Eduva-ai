@@ -456,6 +456,41 @@ class AIGateway:
         else:
             raise ValueError(f"Unknown provider: {provider}")
 
+    def evaluate_quota_tier(self, provider: str, current_rpm: int) -> str:
+        """
+        Evaluates the quota policy tier based on current sliding RPM against provider limits:
+        0–70%:   NORMAL (all admitted)
+        70–80%:  CAUTIOUS (all admitted, monitored)
+        80–90%:  BACKGROUND_THROTTLING (background & experimental shed)
+        90–95%:  HIGH_CRITICAL_ONLY (only high, user_interactive, critical)
+        > 95%:   EMERGENCY_PROTECTION (only critical admitted)
+        """
+        limit = self.rpm_limits.get(provider, 60)
+        ratio = current_rpm / max(1, limit)
+        if ratio < 0.70:
+            return "NORMAL"
+        elif ratio < 0.80:
+            return "CAUTIOUS"
+        elif ratio < 0.90:
+            return "BACKGROUND_THROTTLING"
+        elif ratio <= 0.95:
+            return "HIGH_CRITICAL_ONLY"
+        else:
+            return "EMERGENCY_PROTECTION"
+
+    async def _check_quota_admission(self, provider: str, priority: str) -> bool:
+        rpm, _ = await self.rate_trackers[provider].get_metrics()
+        tier = self.evaluate_quota_tier(provider, rpm)
+        prio = priority.upper()
+        
+        if tier == "EMERGENCY_PROTECTION":
+            return prio == "CRITICAL"
+        elif tier == "HIGH_CRITICAL_ONLY":
+            return prio in ("CRITICAL", "USER_INTERACTIVE")
+        elif tier == "BACKGROUND_THROTTLING":
+            return prio not in ("BACKGROUND", "EXPERIMENTAL")
+        return True
+
     async def execute(
         self,
         task_type: str,
@@ -492,12 +527,10 @@ class AIGateway:
                 if not cb.can_attempt():
                     continue
 
-                # Quota Headroom Check: If priority is low and usage > 80%, leave headroom for interactive/critical
-                rpm, _ = await self.rate_trackers[provider].get_metrics()
-                limit = self.rpm_limits.get(provider, 60)
-                if priority.upper() not in ("CRITICAL", "USER_INTERACTIVE") and rpm >= (limit * (100 - self.quota_reserve_pct) / 100):
+                # Quota Headroom & Tier Admission Check
+                if not await self._check_quota_admission(provider, priority):
                     logger.warning(
-                        f"Provider [{provider}] near capacity ({rpm}/{limit} RPM). Reserving for interactive/critical tasks."
+                        f"Provider [{provider}] quota tier restricted for priority {priority}. Checking alternate provider."
                     )
                     continue
 
@@ -586,6 +619,7 @@ class AIGateway:
             summary[p] = {
                 "status": status,
                 "circuit_state": cb.state,
+                "quota_tier": self.evaluate_quota_tier(p, rpm),
                 "current_rpm": rpm,
                 "current_tpm": tpm,
                 "rpm_limit": self.rpm_limits.get(p, 60),

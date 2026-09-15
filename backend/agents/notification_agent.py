@@ -36,6 +36,7 @@ class NotificationAgent:
         self.event_bus = event_bus
         self.kg = kg
         self.impact_analyzer = impact_analyzer
+        self.seen_fingerprints = set()
         self.notifications: List[NotificationItem] = [
             NotificationItem(
                 id="notif_seed_1",
@@ -60,23 +61,52 @@ class NotificationAgent:
         self.event_bus.subscribe("SCHOLARSHIP_FOUND", self.handle_scholarship_found)
         self.event_bus.subscribe("PORTAL_NOTICE_VERIFIED", self.handle_portal_notice_verified)
 
+    def notify_student(
+        self,
+        student_id: str,
+        title: str,
+        message: str,
+        category: str = "SYSTEM",
+        urgency: str = "MEDIUM",
+        deduplication_key: Optional[str] = None
+    ) -> Optional[NotificationItem]:
+        """
+        Creates and pushes a student notification with strict fingerprint deduplication.
+        Prevents alert fatigue and spam.
+        """
+        import hashlib
+        fp = deduplication_key or hashlib.sha256(f"{student_id}:{title}:{message[:60]}".encode("utf-8")).hexdigest()
+        if fp in self.seen_fingerprints:
+            return None  # Dropped as duplicate
+
+        self.seen_fingerprints.add(fp)
+        notif = NotificationItem(
+            id=f"notif_{int(datetime.datetime.now().timestamp()*1000)}_{len(self.notifications)}",
+            student_id=student_id,
+            title=title,
+            message=message,
+            category=category,
+            urgency=urgency
+        )
+        self.notifications.insert(0, notif)
+        return notif
+
     async def handle_portal_notice_verified(self, event: EduvaEvent):
         pname = event.data.get("portal_name", "Official Portal")
         url = event.data.get("url", "")
-        notif = NotificationItem(
-            id=f"notif_{int(datetime.datetime.now().timestamp()*1000)}",
+        notif = self.notify_student(
             student_id="all",
             title=f"🚨 Official Notice Verified: {pname}",
             message=f"Autonomous monitor verified a published notice on {pname}. Check portal for details.",
             category="SYSTEM",
-            urgency="HIGH"
+            urgency="HIGH",
+            deduplication_key=f"portal_notice_{url}"
         )
-        self.notifications.insert(0, notif)
-        # Immediate real-time WebSocket push
-        await global_notification_broadcaster.broadcast({
-            "type": "NEW_ALERT",
-            "notification": notif.to_dict()
-        })
+        if notif:
+            await global_notification_broadcaster.broadcast({
+                "type": "NEW_ALERT",
+                "notification": notif.to_dict()
+            })
 
     async def drain_queued_alerts(self):
         # Drains pending unbroadcast alerts

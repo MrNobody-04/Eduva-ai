@@ -515,6 +515,9 @@ class OrchestratorAgent:
 
     async def start_autonomous_loop(self):
         self.is_running = True
+        reconciled = global_db.reconcile_abandoned_jobs()
+        if reconciled > 0:
+            print(f"[ORCHESTRATOR] Crash Recovery: Reconciled {reconciled} interrupted jobs from previous run.")
         print("[ORCHESTRATOR] 24/7 Autonomous Intelligence: Launching fault-tolerant concurrent agent loops...")
         
         await asyncio.gather(
