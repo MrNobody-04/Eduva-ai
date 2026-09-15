@@ -39,7 +39,7 @@ class VerificationAgent:
 
     async def execute_verification(self, claim: str, source_context: str = "") -> Dict[str, Any]:
         """
-        Executes strict factual cross-checking and contradiction detection via AI Gateway (Cerebras / Gemini).
+        Executes strict factual cross-checking and contradiction detection via AI Gateway (Cloudflare Workers AI / Gemini).
         """
         from engine.ai_gateway import global_ai_gateway
         system_instruction = (

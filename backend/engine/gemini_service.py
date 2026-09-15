@@ -159,7 +159,8 @@ class GeminiService:
                 try:
                     config = types.GenerateContentConfig(
                         system_instruction=sys_prompt,
-                        max_output_tokens=max_tokens,
+                        max_output_tokens=max(max_tokens, 60),
+                        thinking_config=types.ThinkingConfig(thinking_budget=0),
                         temperature=temperature
                     )
                     response = client.models.generate_content(
@@ -167,10 +168,17 @@ class GeminiService:
                         contents=full_prompt,
                         config=config
                     )
+                    text_out = response.text or ""
+                    if not text_out and response.candidates:
+                        for cand in response.candidates:
+                            if cand.content and cand.content.parts:
+                                for part in cand.content.parts:
+                                    if getattr(part, 'text', None):
+                                        text_out += part.text
                     key_desc.mark_success()
                     return {
                         'success': True,
-                        'text': response.text or '',
+                        'text': text_out,
                         'key_used': key_desc.name,
                         'model': m_name
                     }

@@ -282,7 +282,7 @@ class CopilotAgent:
                 }
             }
 
-        # Open-Ended Dialogue powered by AI Gateway (Groq / Gemini / OpenRouter / Cerebras)
+        # Open-Ended Dialogue powered by AI Gateway (Groq / Gemini / OpenRouter / Cloudflare Workers AI)
         sys_instruction = (
             "You are EDUVA AI, Nepal's premier higher education and university admission counselor. "
             "Your personality is calm, deeply knowledgeable, encouraging, and honest. "

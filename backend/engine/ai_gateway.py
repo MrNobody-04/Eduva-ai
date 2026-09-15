@@ -2,12 +2,11 @@
 EDUVA AI - Intelligent Central AI Gateway
 =========================================
 Centralized multi-provider AI gateway with:
-1. Capability-based dynamic provider routing across 5 providers:
+1. Capability-based dynamic provider routing across 4 active providers:
    - Gemini (Deep research, long-context reasoning, multi-document analysis)
-   - Cerebras (Verification, fact-checking, contradiction detection)
    - Groq (Realtime chat, classification, ultra-low-latency generation)
    - OpenRouter (Model diversity, secondary reasoning, experimental subtasks)
-   - Ollama (Local private inference, batch processing, fallback)
+   - Cloudflare Workers AI (Verification, fast edge inference, fact-checking)
 2. Global and per-provider concurrency semaphores.
 3. Sliding-window RPM/TPM tracking with 20% quota reserve for user-interactive/critical tasks.
 4. Independent circuit breakers with half-open canary recovery.
@@ -67,8 +66,8 @@ class CircuitBreaker:
         self.last_failure_time = time.time()
         self.last_error = error_msg
         
-        # Immediate trip for quota exhaustion or hard payment required
-        if status_code in (402, 429) or self.failure_count >= self.failure_threshold:
+        # Immediate trip for quota exhaustion or hard payment/auth required
+        if status_code in (401, 402, 403, 429) or self.failure_count >= self.failure_threshold:
             self.state = "OPEN"
             logger.warning(
                 f"CircuitBreaker [{self.name}] TRIPPED to OPEN state. Reason: {error_msg} (status: {status_code})"
@@ -113,37 +112,33 @@ class AIGateway:
         
         self.semaphores = {
             "gemini": asyncio.Semaphore(int(os.getenv("GEMINI_MAX_CONCURRENCY", "5"))),
-            "cerebras": asyncio.Semaphore(int(os.getenv("CEREBRAS_MAX_CONCURRENCY", "5"))),
             "groq": asyncio.Semaphore(int(os.getenv("GROQ_MAX_CONCURRENCY", "10"))),
             "openrouter": asyncio.Semaphore(int(os.getenv("OPENROUTER_MAX_CONCURRENCY", "3"))),
-            "ollama": asyncio.Semaphore(int(os.getenv("OLLAMA_MAX_CONCURRENCY", "2"))),
+            "cloudflare": asyncio.Semaphore(int(os.getenv("CLOUDFLARE_MAX_CONCURRENCY", "5"))),
         }
 
         # Concurrency Limits Reference
         self.concurrency_limits = {
             "gemini": int(os.getenv("GEMINI_MAX_CONCURRENCY", "5")),
-            "cerebras": int(os.getenv("CEREBRAS_MAX_CONCURRENCY", "5")),
             "groq": int(os.getenv("GROQ_MAX_CONCURRENCY", "10")),
             "openrouter": int(os.getenv("OPENROUTER_MAX_CONCURRENCY", "3")),
-            "ollama": int(os.getenv("OLLAMA_MAX_CONCURRENCY", "2")),
+            "cloudflare": int(os.getenv("CLOUDFLARE_MAX_CONCURRENCY", "5")),
         }
 
         # Estimated RPM Limits for Quota Protection
         self.rpm_limits = {
             "gemini": 60,
-            "cerebras": 60,
             "groq": 100,
             "openrouter": 30,
-            "ollama": 20,
+            "cloudflare": 60,
         }
 
         # Circuit Breakers
         self.circuit_breakers = {
             "gemini": CircuitBreaker("gemini"),
-            "cerebras": CircuitBreaker("cerebras", failure_threshold=2, recovery_timeout=60.0),
             "groq": CircuitBreaker("groq"),
             "openrouter": CircuitBreaker("openrouter"),
-            "ollama": CircuitBreaker("ollama", failure_threshold=2, recovery_timeout=45.0),
+            "cloudflare": CircuitBreaker("cloudflare", failure_threshold=2, recovery_timeout=60.0),
         }
 
         # Rate Trackers
@@ -151,69 +146,66 @@ class AIGateway:
 
         # API Keys & Endpoints
         self.groq_api_key = os.getenv("GROQ_API_KEY", "")
-        self.cerebras_api_key = os.getenv("CEREBRAS_API_KEY", "")
         self.openrouter_api_key = os.getenv("OPENROUTER_API_KEY", "")
-        self.ollama_base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+        self.cloudflare_account_id = os.getenv("CLOUDFLARE_ACCOUNT_ID", "").strip()
+        self.cloudflare_api_token = os.getenv("CLOUDFLARE_API_TOKEN", "").strip()
 
         # Underlying Gemini Service
         self.gemini_service = GeminiService()
 
-        # Preferred Models per Provider (dynamically configurable with verified fallbacks)
-        cerebras_env_model = os.getenv("CEREBRAS_MODEL", "").strip()
-        cerebras_candidates = [cerebras_env_model] if cerebras_env_model else []
-        for m in ["llama3.1-8b", "llama-3.3-70b", "qwen-3.8-27b", "gpt-oss-120b"]:
-            if m not in cerebras_candidates:
-                cerebras_candidates.append(m)
+        # Preferred Models per Provider
+        cf_model = os.getenv("CLOUDFLARE_MODEL", "@cf/meta/llama-3.1-8b-instruct").strip()
+        if not cf_model:
+            cf_model = "@cf/meta/llama-3.1-8b-instruct"
 
         self.provider_models = {
             "groq": [os.getenv("GROQ_MODEL", "qwen/qwen3.8-27b"), "groq/compound-mini", "openai/gpt-oss-120b"],
-            "cerebras": cerebras_candidates,
             "openrouter": [os.getenv("OPENROUTER_MODEL", "meta-llama/llama-3.3-70b-instruct"), "google/gemini-2.0-flash-exp:free"],
             "gemini": [os.getenv("GEMINI_MODEL", "gemini-2.5-flash"), "gemini-flash-latest"],
-            "ollama": [os.getenv("OLLAMA_MODEL", "llama3"), "mistral"]
+            "cloudflare": [cf_model, "@cf/meta/llama-3.3-70b-instruct"]
         }
 
-        # Capability Routing Matrix
+        # Capability Routing Matrix for 4 Providers
         self.capability_matrix = {
             # Real-time and low latency tasks
-            "REALTIME_CHAT": ["groq", "gemini", "openrouter"],
-            "INTENT_CLASSIFICATION": ["groq", "cerebras", "gemini"],
-            "QUERY_CLASSIFICATION": ["groq", "cerebras", "gemini"],
-            "NEWS_CLASSIFICATION": ["groq", "cerebras", "gemini"],
-            "SAFETY_CLASSIFICATION": ["groq", "cerebras", "gemini"],
-            "NOTIFICATION_GENERATION": ["groq", "gemini", "cerebras"],
-            "SHORT_SUMMARY": ["groq", "gemini", "cerebras"],
-            "FAST_EXTRACTION": ["groq", "cerebras", "gemini"],
+            "REALTIME_CHAT": ["groq", "gemini", "openrouter", "cloudflare"],
+            "INTENT_CLASSIFICATION": ["groq", "cloudflare", "gemini"],
+            "QUERY_CLASSIFICATION": ["groq", "cloudflare", "gemini"],
+            "NEWS_CLASSIFICATION": ["groq", "cloudflare", "gemini"],
+            "SAFETY_CLASSIFICATION": ["groq", "cloudflare", "gemini"],
+            "NOTIFICATION_GENERATION": ["groq", "gemini", "cloudflare"],
+            "SHORT_SUMMARY": ["groq", "gemini", "cloudflare"],
+            "FAST_EXTRACTION": ["groq", "cloudflare", "gemini"],
             
             # Fast verification & precision fact-checking
-            "VERIFICATION": ["cerebras", "gemini", "openrouter", "groq"],
-            "SECOND_OPINION": ["cerebras", "openrouter", "gemini"],
-            "FACT_EXTRACTION": ["cerebras", "groq", "gemini"],
-            "CONTRADICTION_DETECTION": ["cerebras", "gemini", "groq"],
-            "DOCUMENT_SUMMARY": ["cerebras", "gemini", "groq"],
-            "STRUCTURED_EXTRACTION": ["cerebras", "gemini", "groq"],
-            "RESEARCH_SUBTASK": ["cerebras", "openrouter", "gemini"],
+            "VERIFICATION": ["cloudflare", "gemini", "openrouter", "groq"],
+            "SECOND_OPINION": ["cloudflare", "openrouter", "gemini"],
+            "FACT_EXTRACTION": ["cloudflare", "groq", "gemini"],
+            "CONTRADICTION_DETECTION": ["cloudflare", "gemini", "groq"],
+            "DOCUMENT_SUMMARY": ["cloudflare", "gemini", "groq"],
+            "STRUCTURED_EXTRACTION": ["cloudflare", "gemini", "groq"],
+            "RESEARCH_SUBTASK": ["cloudflare", "openrouter", "gemini"],
             
             # Deep reasoning and long-context analysis
-            "DEEP_RESEARCH": ["gemini", "openrouter", "cerebras"],
-            "UNIVERSITY_RESEARCH": ["gemini", "openrouter", "cerebras"],
-            "ADMISSION_ANALYSIS": ["gemini", "cerebras", "groq"],
-            "SCHOLARSHIP_ANALYSIS": ["gemini", "cerebras", "groq"],
-            "DOCUMENT_ANALYSIS": ["gemini", "cerebras", "groq"],
-            "LONG_CONTEXT": ["gemini", "openrouter", "cerebras"],
-            "COMPLEX_REASONING": ["gemini", "cerebras", "groq"],
-            "SOP_ANALYSIS": ["gemini", "cerebras", "groq"],
-            "COURSE_ANALYSIS": ["gemini", "cerebras", "groq"],
-            "ELIGIBILITY_ANALYSIS": ["gemini", "cerebras", "groq"],
+            "DEEP_RESEARCH": ["gemini", "openrouter", "cloudflare", "groq"],
+            "UNIVERSITY_RESEARCH": ["gemini", "openrouter", "cloudflare"],
+            "ADMISSION_ANALYSIS": ["gemini", "cloudflare", "groq"],
+            "SCHOLARSHIP_ANALYSIS": ["gemini", "cloudflare", "groq"],
+            "DOCUMENT_ANALYSIS": ["gemini", "openrouter", "cloudflare"],
+            "LONG_CONTEXT": ["gemini", "openrouter", "cloudflare"],
+            "COMPLEX_REASONING": ["gemini", "cloudflare", "groq"],
+            "SOP_ANALYSIS": ["gemini", "cloudflare", "groq"],
+            "COURSE_ANALYSIS": ["gemini", "cloudflare", "groq"],
+            "ELIGIBILITY_ANALYSIS": ["gemini", "cloudflare", "groq"],
             
             # Diversity and experimental
-            "MODEL_DIVERSITY": ["openrouter", "gemini", "cerebras"],
-            "EXPERIMENTAL_RESEARCH": ["openrouter", "gemini", "cerebras"],
-            "LOCAL_PROCESSING": ["ollama", "groq", "gemini"],
+            "MODEL_DIVERSITY": ["openrouter", "gemini", "cloudflare"],
+            "EXPERIMENTAL_RESEARCH": ["openrouter", "gemini", "cloudflare"],
+            "BACKGROUND_CLASSIFICATION": ["cloudflare", "groq", "openrouter"],
         }
 
-        # Default fallback chain
-        self.default_chain = ["groq", "gemini", "openrouter", "cerebras", "ollama"]
+        # Default fallback chain across the 4 providers
+        self.default_chain = ["groq", "gemini", "cloudflare", "openrouter"]
 
         # Track active requests for live telemetry
         self.active_requests = {p: 0 for p in self.semaphores}
@@ -224,7 +216,7 @@ class AIGateway:
 
     async def _check_cache(self, hash_key: str) -> Optional[Dict[str, Any]]:
         cached = global_db.get_content_cache(hash_key)
-        if cached and cached.get("cached_result"):
+        if cached and cached.get("cached_result") and cached["cached_result"].get("content"):
             return cached["cached_result"]
         return None
 
@@ -252,17 +244,12 @@ class AIGateway:
             if p not in candidates:
                 candidates.append(p)
 
-        # Filter candidates based on circuit breaker & quota headroom
+        # Filter candidates based on circuit breaker
         healthy_candidates = []
         for p in candidates:
             cb = self.circuit_breakers[p]
             if not cb.can_attempt():
                 continue
-
-            # If Ollama has no local server running, skip quickly unless explicitly requested
-            if p == "ollama" and preferred_provider != "ollama":
-                continue
-
             healthy_candidates.append(p)
 
         return healthy_candidates if healthy_candidates else candidates
@@ -359,8 +346,8 @@ class AIGateway:
                     # If error response
                     err_msg = f"{resp.status_code} {resp.text}"
                     last_err = (err_msg, resp.status_code)
-                    if resp.status_code in (402, 404, 429):
-                        # Break model loop if quota or model unavailable
+                    if resp.status_code in (401, 402, 403, 404, 429):
+                        # Break or continue model loop
                         continue
             except Exception as e:
                 last_err = (str(e), None)
@@ -372,48 +359,78 @@ class AIGateway:
         err.status_code = status_code
         raise err
 
-    async def _call_ollama(
+    async def _call_cloudflare(
         self,
         prompt: str,
         system_prompt: Optional[str],
         max_tokens: int,
         temperature: float
     ) -> Dict[str, Any]:
-        url = f"{self.ollama_base_url}/api/chat"
+        if not self.cloudflare_account_id or not self.cloudflare_api_token:
+            err = RuntimeError("[cloudflare] Missing CLOUDFLARE_ACCOUNT_ID or CLOUDFLARE_API_TOKEN")
+            err.status_code = 401
+            raise err
+
         messages = []
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
         messages.append({"role": "user", "content": prompt})
 
-        t0 = time.time()
-        try:
-            async with httpx.AsyncClient(timeout=15.0) as client:
-                resp = await client.post(
-                    url,
-                    json={
-                        "model": "llama3",
-                        "messages": messages,
-                        "stream": False,
-                        "options": {"temperature": temperature, "num_predict": max_tokens}
-                    }
-                )
-                latency = (time.time() - t0) * 1000.0
-                if resp.status_code == 200:
-                    data = resp.json()
-                    content = data.get("message", {}).get("content", "")
-                    return {
-                        "content": content,
-                        "provider": "ollama",
-                        "model": "llama3",
-                        "tokens_prompt": data.get("prompt_eval_count", 0),
-                        "tokens_completion": data.get("eval_count", 0),
-                        "latency_ms": latency
-                    }
-                raise RuntimeError(f"Ollama returned {resp.status_code}: {resp.text}")
-        except Exception as e:
-            err = RuntimeError(f"[ollama] Offline or unreachable: {e}")
-            err.status_code = 503
-            raise err
+        models = self.provider_models.get("cloudflare", ["@cf/meta/llama-3.1-8b-instruct"])
+        last_err = None
+
+        for model in models:
+            url = f"https://api.cloudflare.com/client/v4/accounts/{self.cloudflare_account_id}/ai/run/{model}"
+            headers = {
+                "Authorization": f"Bearer {self.cloudflare_api_token}",
+                "Content-Type": "application/json"
+            }
+            payload = {
+                "messages": messages,
+                "max_tokens": max_tokens,
+                "temperature": temperature
+            }
+            t0 = time.time()
+            try:
+                async with httpx.AsyncClient(timeout=30.0) as client:
+                    resp = await client.post(url, headers=headers, json=payload)
+                    latency = (time.time() - t0) * 1000.0
+
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        result = data.get("result", {})
+                        content = ""
+                        if isinstance(result, dict):
+                            if "response" in result:
+                                content = result["response"]
+                            elif "choices" in result and result["choices"]:
+                                content = result["choices"][0].get("message", {}).get("content", "")
+                        elif isinstance(result, str):
+                            content = result
+
+                        prompt_tokens = len(prompt.split()) * 2
+                        comp_tokens = len(content.split()) * 2
+                        return {
+                            "content": content,
+                            "provider": "cloudflare",
+                            "model": model,
+                            "tokens_prompt": prompt_tokens,
+                            "tokens_completion": comp_tokens,
+                            "latency_ms": latency
+                        }
+                    err_msg = f"{resp.status_code} {resp.text}"
+                    last_err = (err_msg, resp.status_code)
+                    if resp.status_code in (401, 403, 404, 429):
+                        continue
+            except Exception as e:
+                last_err = (str(e), None)
+                continue
+
+        error_desc = last_err[0] if last_err else "All Cloudflare models failed"
+        status_code = last_err[1] if last_err else None
+        err = RuntimeError(f"[cloudflare] API error: {error_desc}")
+        err.status_code = status_code
+        raise err
 
     async def _execute_provider(
         self,
@@ -436,17 +453,6 @@ class AIGateway:
                 max_tokens=max_tokens,
                 temperature=temperature
             )
-        elif provider == "cerebras":
-            return await self._call_openai_compatible(
-                provider="cerebras",
-                url="https://api.cerebras.ai/v1/chat/completions",
-                api_key=self.cerebras_api_key,
-                models=self.provider_models["cerebras"],
-                prompt=prompt,
-                system_prompt=system_prompt,
-                max_tokens=max_tokens,
-                temperature=temperature
-            )
         elif provider == "openrouter":
             return await self._call_openai_compatible(
                 provider="openrouter",
@@ -459,8 +465,8 @@ class AIGateway:
                 temperature=temperature,
                 extra_headers={"HTTP-Referer": "https://eduva.ai", "X-Title": "Eduva AI"}
             )
-        elif provider == "ollama":
-            return await self._call_ollama(prompt, system_prompt, max_tokens, temperature)
+        elif provider == "cloudflare":
+            return await self._call_cloudflare(prompt, system_prompt, max_tokens, temperature)
         else:
             raise ValueError(f"Unknown provider: {provider}")
 
@@ -542,7 +548,7 @@ class AIGateway:
                     )
                     continue
 
-                # Acquire per-provider semaphore with non-blocking try or bounded wait
+                # Acquire per-provider semaphore with bounded wait
                 try:
                     async with self.semaphores[provider]:
                         self.active_requests[provider] += 1
@@ -568,7 +574,7 @@ class AIGateway:
                             )
 
                             # Populate Deduplication Cache
-                            if source_uri or len(prompt) >= 10:
+                            if (source_uri or len(prompt) >= 10) and res.get("content"):
                                 global_db.set_content_cache(
                                     hash_key=hash_key,
                                     source_uri=source_uri or "prompt",
@@ -607,20 +613,17 @@ class AIGateway:
 
     async def get_providers_status(self) -> Dict[str, Any]:
         """
-        Returns real-time health, quota, and circuit status for all 5 providers.
+        Returns real-time health, quota, and circuit status for all 4 active providers.
         """
         summary = {}
         for p in self.semaphores:
             rpm, tpm = await self.rate_trackers[p].get_metrics()
             cb = self.circuit_breakers[p]
             
-            # Determine provider status label
             if cb.state == "OPEN":
                 status = "CIRCUIT_OPEN"
             elif cb.state == "HALF_OPEN":
                 status = "RECOVERING"
-            elif p == "ollama" and cb.failure_count > 0:
-                status = "OFFLINE"
             else:
                 status = "HEALTHY"
 

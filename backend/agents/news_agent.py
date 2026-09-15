@@ -83,7 +83,7 @@ class NewsAgent:
         )
     async def generate_news_update(self, raw_notice: str, source: str = "Official Gazette") -> Dict[str, Any]:
         """
-        Synthesizes and classifies incoming educational bulletins via AI Gateway (Groq / Cerebras).
+        Synthesizes and classifies incoming educational bulletins via AI Gateway (Groq / Cloudflare Workers AI).
         """
         from engine.ai_gateway import global_ai_gateway
         system_instruction = (

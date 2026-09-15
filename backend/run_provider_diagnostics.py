@@ -1,11 +1,10 @@
 """
-EDUVA AI — Live 5-Provider Diagnostics CLI Command
-Executes real, lightweight, concurrent runtime diagnostic checks across all five configured AI providers:
+EDUVA AI — Live 4-Provider Diagnostics CLI Command
+Executes real, lightweight, concurrent runtime diagnostic checks across all four configured AI providers:
 1. Gemini
-2. Cerebras
-3. Groq
-4. OpenRouter
-5. Ollama
+2. Groq
+3. OpenRouter
+4. Cloudflare Workers AI
 
 Security:
 - Never displays API keys or sensitive authorization headers
@@ -31,15 +30,15 @@ from engine.provider_health import global_provider_health
 
 async def main():
     print("=" * 80)
-    print("EDUVA AI: 5-PROVIDER RUNTIME DIAGNOSTICS")
+    print("EDUVA AI: 4-PROVIDER RUNTIME DIAGNOSTICS")
     print("=" * 80)
-    print("Executing lightweight, concurrent health checks across all 5 providers...")
+    print("Executing lightweight, concurrent health checks across all 4 providers...")
     
     t0 = datetime.datetime.now(datetime.timezone.utc)
     results = await global_provider_health.run_diagnostics(force=True)
     
     print("\n" + "-" * 80)
-    print(f"{'Provider':<14} {'Status':<20} {'Model':<24} {'Latency':<10}")
+    print(f"{'Provider':<16} {'Status':<20} {'Model':<30} {'Latency':<10}")
     print("-" * 80)
     
     status_tags = {
@@ -54,17 +53,26 @@ async def main():
         "PROVIDER_ERROR": "[PROVIDER_ERROR]"
     }
     
+    provider_names = {
+        "gemini": "Gemini",
+        "groq": "Groq",
+        "openrouter": "OpenRouter",
+        "cloudflare": "Cloudflare AI"
+    }
+
     for p, d in results.items():
+        name = provider_names.get(p, p.capitalize())
         tag = status_tags.get(d["status"], f"[{d['status']}]")
-        model_str = (d.get("model") or "none")[:22]
+        model_str = (d.get("model") or "none")[:28]
         latency_str = f"{d.get('latency_ms', 0):.1f}ms"
-        print(f"{p.capitalize():<14} {tag:<20} {model_str:<24} {latency_str:<10}")
+        print(f"{name:<16} {tag:<20} {model_str:<30} {latency_str:<10}")
         if d.get("message") and d["status"] != "CONNECTED":
             print(f"   -> Detail: {d['message']}")
             
     print("-" * 80)
     connected_count = sum(1 for d in results.values() if d["status"] == "CONNECTED")
-    print(f"Summary: {connected_count}/5 Providers CONNECTED & Ready for Inference")
+    total_count = len(results)
+    print(f"Summary: {connected_count}/{total_count} Providers CONNECTED & Ready for Inference")
     print(f"Checked at: {t0.isoformat()}")
     print("=" * 80)
 

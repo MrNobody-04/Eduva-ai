@@ -252,13 +252,13 @@ export default function AIControlCenter({ theme }) {
           </div>
         )}
 
-        {/* EDUVA AI 5-PROVIDER RUNTIME STATUS & DIAGNOSTICS */}
+        {/* EDUVA AI 4-PROVIDER RUNTIME STATUS & DIAGNOSTICS */}
         <div className="mt-4 pt-4 border-t border-gray-800/50">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-black uppercase tracking-wider text-blue-400">
-                  5-Provider Infrastructure
+                  4-Provider Infrastructure
                 </span>
                 <span className="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 font-mono text-[9px] font-bold">
                   CENTRAL AI GATEWAY
@@ -286,14 +286,13 @@ export default function AIControlCenter({ theme }) {
             </div>
           )}
 
-          {/* 5-Card Responsive Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          {/* 4-Card Responsive Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {[
               { id: 'gemini', name: 'Gemini', desc: 'Deep Logic & Research' },
-              { id: 'cerebras', name: 'Cerebras', desc: 'Ultra-Fast Fact Check' },
               { id: 'groq', name: 'Groq', desc: 'Realtime Chat & NLP' },
-              { id: 'openrouter', name: 'OpenRouter', desc: 'Model Diversity' },
-              { id: 'ollama', name: 'Ollama', desc: 'Local / Private Daemon' }
+              { id: 'openrouter', name: 'OpenRouter', desc: 'Model Diversity & Fallback' },
+              { id: 'cloudflare', name: 'Cloudflare AI', desc: 'Verification & Fast Edge' }
             ].map(p => {
               const info = providerHealth ? providerHealth[p.id] : null
               const status = info ? info.status : 'NOT_CHECKED'
