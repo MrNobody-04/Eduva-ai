@@ -18,18 +18,22 @@ export default function Navbar({
   const [isMoreOpen, setIsMoreOpen] = useState(false)
   const moreRef = useRef(null)
 
-  // Primary 5 Navigation Tabs
+  // Primary Navigation Tabs
   const primaryTabs = [
     { id: 'landing', label: 'Home' },
     { id: 'briefing', label: 'Dashboard' },
     { id: 'universities', label: 'Universities' },
+    { id: 'colleges', label: 'Colleges' },
+    { id: 'courses', label: 'Degrees' },
+    { id: 'compare', label: 'Compare' },
     { id: 'entrance', label: 'Entrance' },
-    { id: 'alerts', label: 'Alerts' }
+    { id: 'alerts', label: 'Safety' }
   ]
 
   // Secondary Features grouped under "More"
   const baseSecondaryTabs = [
-    { id: 'courses', label: 'Degrees & Courses' },
+    { id: 'results', label: 'Merit Results (Analysis)' },
+    { id: 'scholarships', label: 'Scholarships' },
     { id: 'loksewa', label: 'Loksewa Radar' },
     { id: 'applications', label: 'Application Tracker' },
     { id: 'saved', label: 'Saved Items' }
@@ -61,28 +65,26 @@ export default function Navbar({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-20">
           
-          {/* Brand Logo with Futuristic AI Core Badge */}
+          {/* Brand Logo with Editorial Mark */}
           <div 
             className="flex items-center space-x-3 cursor-pointer group shrink-0" 
             onClick={() => handleTabClick('landing')}
           >
-            <div className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-600 p-0.5 shadow-lg shadow-blue-500/25 group-hover:scale-105 transition-all">
-              <div className="w-full h-full rounded-[14px] flex items-center justify-center bg-[var(--surface-1)]">
-                <Cpu className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400 animate-pulse" />
-              </div>
-              <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-[var(--bg-main)] animate-ping"></span>
+            <div className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-blue-600 p-0.5 shadow-md shadow-blue-600/20 group-hover:scale-105 transition-transform flex items-center justify-center text-white">
+              <span className="font-extrabold tracking-tighter text-base">E</span>
+              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-emerald-400 rounded-full border-2 border-[var(--bg-main)]"></span>
             </div>
             <div>
               <div className="flex items-center space-x-2">
-                <span className="text-xl sm:text-2xl font-black tracking-tight bg-gradient-to-r from-blue-400 via-cyan-300 to-indigo-400 bg-clip-text text-transparent">
-                  EDUVA AI
+                <span className="text-lg sm:text-xl font-extrabold tracking-tight text-[var(--text-heading)]">
+                  EDUVA <span className="text-blue-500">AI</span>
                 </span>
-                <span className="px-2 py-0.5 text-[9px] font-black uppercase tracking-widest bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-full hidden sm:inline-block">
-                  Verified
+                <span className="px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 rounded-full hidden sm:inline-block">
+                  Level 1
                 </span>
               </div>
-              <p className="text-[10px] font-semibold tracking-wide text-[var(--text-secondary)]">
-                Nepal Higher Education Intelligence
+              <p className="text-[10px] font-medium tracking-wide text-[var(--text-muted)]">
+                Higher Education Intelligence • Nepal
               </p>
             </div>
           </div>

@@ -10,6 +10,8 @@ import LoksewaRadar from './components/LoksewaRadar'
 import ApplicationTracker from './components/ApplicationTracker'
 import SavedHub from './components/SavedHub'
 import AlertsAndSafety from './components/AlertsAndSafety'
+import ClimateDisasterHub from './components/ClimateDisasterHub'
+import ComparisonView from './components/ComparisonView'
 import EntranceResultsViewer from './components/EntranceResultsViewer'
 import ScholarshipsPortal from './components/ScholarshipsPortal'
 import ConversationalCopilot from './components/ConversationalCopilot'
@@ -304,6 +306,19 @@ export default function App() {
             theme={theme}
             onOpenCopilot={openCopilotWithPrompt}
             onAddToTracker={handleAddToTracker}
+          />
+        )}
+
+        {activeTab === 'compare' && (
+          <ComparisonView
+            theme={theme}
+            onOpenCopilot={openCopilotWithPrompt}
+          />
+        )}
+
+        {activeTab === 'climate' && (
+          <ClimateDisasterHub
+            theme={theme}
           />
         )}
 

@@ -67,15 +67,15 @@ export default function EntranceCenter({ theme }) {
   }
 
   return (
-    <div className="space-y-8 animate-fadeIn">
+    <div className="space-y-8 animate-fadeIn pb-12">
       {/* Header Banner */}
-      <div className={`p-6 sm:p-8 rounded-3xl border shadow-xl relative overflow-hidden transition-all ${
+      <div className={`p-6 sm:p-8 rounded-3xl border shadow-depth-md relative overflow-hidden transition-all ${
         theme === 'dark'
-          ? 'bg-gradient-to-br from-slate-900 via-indigo-950/40 to-slate-900 border-slate-800'
-          : 'bg-gradient-to-br from-white via-indigo-50/40 to-slate-50 border-slate-200'
+          ? 'bg-[#0B101E] border-slate-800/80'
+          : 'bg-white border-slate-200/90'
       }`}>
-        <div className="max-w-2xl space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-600 dark:text-blue-400 text-xs font-black tracking-wide uppercase">
+        <div className="max-w-2xl space-y-3">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-500 text-xs font-bold tracking-wider uppercase">
             <Calendar className="w-3.5 h-3.5" />
             <span>National Entrance Exam Command Hub</span>
           </div>
@@ -94,7 +94,7 @@ export default function EntranceCenter({ theme }) {
         {/* Search Input */}
         <div className="pt-4 max-w-md">
           <div className={`p-2 rounded-2xl border flex items-center gap-2 ${
-            theme === 'dark' ? 'bg-[#0E1424] border-slate-700/80' : 'bg-white border-slate-300 shadow-sm'
+            theme === 'dark' ? 'bg-[#060911] border-slate-700/80' : 'bg-white border-slate-300 shadow-sm'
           }`}>
             <Search className="w-4 h-4 text-slate-400 ml-2" />
             <input 
@@ -126,8 +126,8 @@ export default function EntranceCenter({ theme }) {
               key={exam.id}
               className={`card-3d p-6 rounded-3xl border transition-all duration-300 flex flex-col justify-between group ${
                 theme === 'dark'
-                  ? 'bg-[#0E1424] border-slate-800 hover:border-blue-500/50'
-                  : 'bg-white border-slate-200 hover:border-blue-400 shadow-md hover:shadow-xl'
+                  ? 'bg-[#0B101E] border-slate-800/80 hover:border-blue-500/50 hover:shadow-depth-md'
+                  : 'bg-white border-slate-200/90 hover:border-blue-500 hover:shadow-depth-md'
               }`}
             >
               <div className="space-y-4">

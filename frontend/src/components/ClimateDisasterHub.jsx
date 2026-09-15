@@ -63,28 +63,28 @@ export default function ClimateDisasterHub({ theme }) {
   }
 
   return (
-    <div className="space-y-6 sm:space-y-8 animate-fadeIn w-full max-w-full overflow-hidden">
+    <div className="space-y-6 sm:space-y-8 animate-fadeIn w-full max-w-full overflow-hidden pb-12">
       {/* Header Banner */}
-      <div className={`p-5 sm:p-8 rounded-3xl border shadow-xl relative overflow-hidden transition-all ${
+      <div className={`p-5 sm:p-8 rounded-3xl border shadow-depth-md relative overflow-hidden transition-all ${
         theme === 'dark' 
-          ? 'bg-gradient-to-br from-slate-900 via-gray-900 to-rose-950/40 border-gray-800' 
-          : 'bg-gradient-to-br from-white via-rose-50/40 to-amber-50/30 border-rose-200/60'
+          ? 'bg-[#0B101E] border-slate-800/80' 
+          : 'bg-white border-slate-200/90'
       }`}>
         <div className="absolute -right-10 -bottom-10 opacity-10 pointer-events-none hidden sm:block">
           <Mountain className="w-64 h-64 text-rose-500" />
         </div>
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="max-w-2xl space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-500 text-xs font-black tracking-wide uppercase">
+          <div className="max-w-2xl space-y-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-500 text-xs font-bold tracking-wider uppercase">
               <ShieldAlert className="w-3.5 h-3.5 animate-pulse" />
               <span>Real-Time Climate & Natural Disaster Radar</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-slate-900 dark:text-white">
               Himalayan Hazard Early Warning & Global Warming Watch
             </h1>
             <p className={`text-xs sm:text-sm leading-relaxed ${
-              theme === 'dark' ? 'text-gray-300' : 'text-slate-600'
+              theme === 'dark' ? 'text-slate-300' : 'text-slate-600'
             }`}>
               Live monitoring of Glacial Lake Outburst Floods (GLOF), monsoon highway landslides, Koshi basin river discharge, and Kathmandu air inversion. Understanding climate risk to drive proactive student lifestyle sustainability.
             </p>
@@ -96,12 +96,12 @@ export default function ClimateDisasterHub({ theme }) {
               disabled={isRefreshing}
               className={`px-4 py-2.5 rounded-xl border text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
                 theme === 'dark'
-                  ? 'bg-gray-800 border-gray-700 text-gray-200 hover:bg-gray-750'
+                  ? 'bg-[#060911] border-slate-700 text-slate-200 hover:border-blue-500'
                   : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
               }`}
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
-              <span>{isRefreshing ? 'Syncing...' : 'Sync Sensor Telemetry'}</span>
+              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-rose-500' : 'text-slate-400'}`} />
+              <span>{isRefreshing ? 'Refreshing...' : 'Live Refresh'}</span>
             </button>
           </div>
         </div>

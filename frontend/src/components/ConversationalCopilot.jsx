@@ -63,6 +63,29 @@ export default function ConversationalCopilot({ isOpen, onClose, initialQuery = 
     }
   }, [isOpen, initialQuery])
 
+  // Authenticated cryptographic session token manager
+  const getOrFetchSessionToken = async () => {
+    let token = localStorage.getItem('eduva_session_token')
+    if (token) return token
+    try {
+      const res = await fetch('/api/auth/session', { method: 'POST' })
+      if (res.ok) {
+        const data = await res.json()
+        if (data.token) {
+          localStorage.setItem('eduva_session_token', data.token)
+          if (data.session_id) {
+            localStorage.setItem('eduva_chat_session_id', data.session_id)
+            setSessionId(data.session_id)
+          }
+          return data.token
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to obtain cryptographic guest session:', e)
+    }
+    return ''
+  }
+
   // Clear / Delete recent chats
   const handleClearHistory = async () => {
     if (messages.length <= 1 && messages[0]?.id === 'msg_welcome') return
@@ -77,7 +100,14 @@ export default function ConversationalCopilot({ isOpen, onClose, initialQuery = 
     localStorage.removeItem('eduva_chat_messages')
 
     try {
-      await fetch(`/api/chat/history?session_id=${oldSessionId}`, { method: 'DELETE' })
+      const token = await getOrFetchSessionToken()
+      await fetch(`/api/chat/history?session_id=${oldSessionId}`, { 
+        method: 'DELETE',
+        headers: token ? {
+          'Authorization': `Bearer ${token}`,
+          'X-Session-Token': token
+        } : {}
+      })
     } catch (err) {
       console.warn('Backend history deletion note:', err)
     } finally {
@@ -106,15 +136,38 @@ export default function ConversationalCopilot({ isOpen, onClose, initialQuery = 
     } catch (e) {}
 
     try {
-      const res = await fetch('/api/copilot/chat', {
+      let token = await getOrFetchSessionToken()
+      let res = await fetch('/api/copilot/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}`, 'X-Session-Token': token } : {})
+        },
         body: JSON.stringify({ 
           query: q, 
           session_id: sessionId,
           student_id: studentId 
         })
       })
+
+      // If token expired, refresh guest session once
+      if (res.status === 401) {
+        localStorage.removeItem('eduva_session_token')
+        token = await getOrFetchSessionToken()
+        res = await fetch('/api/copilot/chat', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}`, 'X-Session-Token': token } : {})
+          },
+          body: JSON.stringify({ 
+            query: q, 
+            session_id: sessionId,
+            student_id: studentId 
+          })
+        })
+      }
+
       if (res.ok) {
         const data = await res.json()
         const aiMsg = {
@@ -128,6 +181,14 @@ export default function ConversationalCopilot({ isOpen, onClose, initialQuery = 
           source_citation: data.source_citation
         }
         setMessages(prev => [...prev, aiMsg])
+      } else {
+        const errData = await res.json().catch(() => ({}))
+        const errorDetail = errData?.error?.message || errData?.detail || 'Authentication required'
+        setMessages(prev => [...prev, {
+          id: `err_${Date.now()}`,
+          sender: 'ai',
+          text: `We could not complete your request (${errorDetail}). Please try again or log in.`
+        }])
       }
     } catch (err) {
       console.error('Chat error:', err)
@@ -167,31 +228,27 @@ export default function ConversationalCopilot({ isOpen, onClose, initialQuery = 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
-      <div className={`w-full max-w-3xl h-[85vh] rounded-3xl border shadow-2xl flex flex-col overflow-hidden transition-all animate-slide-up ${
-        theme === 'dark' ? 'bg-[#0E1424] border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900'
+      <div className={`w-full max-w-3xl h-[88vh] rounded-3xl border shadow-depth-lg flex flex-col overflow-hidden transition-all animate-slide-up ${
+        theme === 'dark' ? 'bg-[#0B101E] border-slate-800/80 text-white' : 'bg-white border-slate-200 text-slate-900'
       }`}>
-        {/* Header with Futuristic AI Logo */}
+        {/* Header with High-Precision Status Bar */}
         <div className={`p-4 sm:p-5 border-b flex items-center justify-between ${
-          theme === 'dark' ? 'border-slate-800 bg-slate-900/60' : 'border-slate-200 bg-slate-50'
+          theme === 'dark' ? 'border-slate-800/80 bg-[#0E1424]/90' : 'border-slate-200 bg-slate-50'
         }`}>
           <div className="flex items-center space-x-3">
-            <div className="relative w-11 h-11 rounded-2xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-600 p-0.5 shadow-lg shadow-blue-500/30">
-              <div className={`w-full h-full rounded-[14px] flex items-center justify-center ${
-                theme === 'dark' ? 'bg-[#080C14]' : 'bg-white'
-              }`}>
-                <Cpu className="w-6 h-6 text-blue-400 animate-pulse" />
-              </div>
-              <span className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-400 rounded-full border-2 border-[#080C14] animate-ping"></span>
+            <div className="relative w-10 h-10 rounded-2xl bg-blue-600/10 border border-blue-500/30 flex items-center justify-center shadow-md shadow-blue-500/10">
+              <Bot className="w-5 h-5 text-blue-500" />
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-[#0B101E]"></span>
             </div>
 
             <div>
               <div className="flex items-center space-x-2">
-                <h3 className="font-black text-sm tracking-tight">EDUVA AI Intelligence Hub</h3>
-                <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                <h3 className="font-bold text-sm tracking-tight">Eduva AI Intelligence Counselor</h3>
+                <span className="px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
                   Level 1 Verified
                 </span>
               </div>
-              <p className="text-[11px] opacity-60">Persistent Conversational Memory • Zero Fabrication</p>
+              <p className="text-[11px] text-slate-400 font-medium">4-Provider Multi-Agent Routing • Zero Fabrication Policy</p>
             </div>
           </div>
 
@@ -205,13 +262,13 @@ export default function ConversationalCopilot({ isOpen, onClose, initialQuery = 
                 title="Delete Recent Chat History"
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">{isClearing ? 'Clearing...' : 'Clear History'}</span>
+                <span className="hidden sm:inline">{isClearing ? 'Clearing...' : 'Clear'}</span>
               </button>
             )}
 
             <button
               onClick={onClose}
-              className="p-2 rounded-xl hover:bg-slate-800 transition-colors text-slate-400 hover:text-white cursor-pointer"
+              className="p-2 rounded-xl hover:bg-slate-800/60 transition-colors text-slate-400 hover:text-white cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -227,9 +284,9 @@ export default function ConversationalCopilot({ isOpen, onClose, initialQuery = 
             >
               <div className={`max-w-2xl rounded-2xl p-4 text-xs sm:text-sm leading-relaxed space-y-3 ${
                 m.sender === 'user'
-                  ? 'bg-blue-600 text-white rounded-br-none shadow-md'
+                  ? 'bg-blue-600 text-white rounded-br-none shadow-md shadow-blue-600/20'
                   : theme === 'dark'
-                    ? 'bg-slate-900/90 border border-slate-800 rounded-bl-none text-slate-200'
+                    ? 'bg-[#0E1424] border border-slate-800/80 rounded-bl-none text-slate-200'
                     : 'bg-slate-100 border border-slate-200 rounded-bl-none text-slate-800'
               }`}>
                 <p className="whitespace-pre-wrap">{m.text}</p>
@@ -263,7 +320,7 @@ export default function ConversationalCopilot({ isOpen, onClose, initialQuery = 
                 {m.cards && m.response_type === 'COURSE_CARDS' && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2 pt-2 border-t border-slate-800/60">
                     {m.cards.map((card, i) => (
-                      <div key={i} className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 space-y-1 text-xs">
+                      <div key={i} className="p-3 rounded-xl bg-[#060911]/80 border border-slate-800/80 space-y-1 text-xs">
                         <span className="font-bold text-white block">{card.title} ({card.code})</span>
                         <span className="text-[10px] text-emerald-400 font-bold block">{card.duration}</span>
                         <span className="text-[10px] opacity-70 block">Entrance: {card.entrance_exam}</span>
@@ -276,7 +333,7 @@ export default function ConversationalCopilot({ isOpen, onClose, initialQuery = 
                 {m.cards && m.response_type === 'COLLEGE_CARDS' && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2 pt-2 border-t border-slate-800/60">
                     {m.cards.map((col, i) => (
-                      <div key={i} className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 space-y-1.5 text-xs">
+                      <div key={i} className="p-3 rounded-xl bg-[#060911]/80 border border-slate-800/80 space-y-1.5 text-xs">
                         <span className="font-bold text-slate-100 dark:text-white block">{col.name}</span>
                         <span className="text-[10px] text-blue-400 block">{col.university} • {col.location}</span>
                         <div className="flex items-center justify-between pt-1">
@@ -295,7 +352,7 @@ export default function ConversationalCopilot({ isOpen, onClose, initialQuery = 
                                 })
                                 onClose()
                               }}
-                              className="px-2 py-0.5 rounded-lg bg-blue-600/30 hover:bg-blue-600 text-blue-300 hover:text-white text-[9px] font-black border border-blue-500/30 transition-all cursor-pointer"
+                              className="px-2 py-0.5 rounded-lg bg-blue-600/30 hover:bg-blue-600 text-blue-300 hover:text-white text-[9px] font-bold border border-blue-500/30 transition-all cursor-pointer"
                             >
                               + Tracker
                             </button>
@@ -348,7 +405,7 @@ export default function ConversationalCopilot({ isOpen, onClose, initialQuery = 
 
         {/* Input Bar */}
         <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className={`p-4 border-t flex items-center gap-2 ${
-          theme === 'dark' ? 'border-slate-800 bg-slate-900/60' : 'border-slate-200 bg-slate-50'
+          theme === 'dark' ? 'border-slate-800/80 bg-[#0E1424]/90' : 'border-slate-200 bg-slate-50'
         }`}>
           <button
             type="button"
@@ -356,7 +413,7 @@ export default function ConversationalCopilot({ isOpen, onClose, initialQuery = 
             className={`p-2.5 rounded-xl border transition-all cursor-pointer ${
               isListening
                 ? 'bg-rose-600 text-white animate-pulse border-rose-500'
-                : theme === 'dark' ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-white border-slate-300 text-slate-700'
+                : theme === 'dark' ? 'bg-[#060911] border-slate-700 text-slate-300 hover:border-blue-500' : 'bg-white border-slate-300 text-slate-700 hover:border-blue-500'
             }`}
             title="Voice input"
           >
@@ -369,14 +426,14 @@ export default function ConversationalCopilot({ isOpen, onClose, initialQuery = 
             onChange={(e) => setInputQuery(e.target.value)}
             placeholder="Ask about colleges, BCA, BSc CSIT, entrance dates, or +2 eligibility..."
             className={`flex-1 px-4 py-2.5 rounded-xl border text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              theme === 'dark' ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-300 text-slate-900'
+              theme === 'dark' ? 'bg-[#060911] border-slate-700 text-white' : 'bg-white border-slate-300 text-slate-900'
             }`}
           />
 
           <button
             type="submit"
             disabled={!inputQuery.trim()}
-            className="p-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all shadow-md disabled:opacity-50 cursor-pointer"
+            className="p-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all shadow-md shadow-blue-600/20 disabled:opacity-50 cursor-pointer"
           >
             <Send className="w-4 h-4" />
           </button>

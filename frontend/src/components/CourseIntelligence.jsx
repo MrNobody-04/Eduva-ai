@@ -68,41 +68,41 @@ export default function CourseIntelligence({ theme }) {
   })
 
   return (
-    <div className="space-y-8 animate-fadeIn w-full max-w-full overflow-hidden">
+    <div className="space-y-8 animate-fadeIn w-full max-w-full overflow-hidden pb-12">
       {/* Header Banner */}
-      <div className={`p-6 sm:p-8 rounded-3xl border shadow-xl relative overflow-hidden transition-all ${
+      <div className={`p-6 sm:p-8 rounded-3xl border shadow-depth-md relative overflow-hidden transition-all ${
         theme === 'dark' 
-          ? 'bg-gradient-to-br from-slate-900 via-indigo-950/40 to-blue-950/30 border-gray-800' 
-          : 'bg-gradient-to-br from-white via-indigo-50/40 to-blue-50/30 border-indigo-200/60'
+          ? 'bg-[#0B101E] border-slate-800/80' 
+          : 'bg-white border-slate-200/90'
       }`}>
-        <div className="max-w-3xl space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-500 text-xs font-black uppercase tracking-wide">
+        <div className="max-w-3xl space-y-3">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-500 text-xs font-bold uppercase tracking-wider">
             <BookOpen className="w-3.5 h-3.5" />
             <span>Nepal Higher Education Course Directory & Eligibility Matcher</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight">
-            Academic Degree Intelligence & "What Can I Study?"
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-slate-900 dark:text-white">
+            Academic Degree Intelligence & &ldquo;What Can I Study?&rdquo;
           </h1>
-          <p className={`text-xs sm:text-sm leading-relaxed ${theme === 'dark' ? 'text-gray-300' : 'text-slate-600'}`}>
+          <p className={`text-xs sm:text-sm leading-relaxed ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
             Explore 40+ verified undergraduate degrees across Computing, Engineering, Medicine, and Management. Check your qualifying eligibility and find matching colleges with verified fee structures.
           </p>
         </div>
       </div>
 
       {/* "What Can I Study?" Interactive Tool */}
-      <div className={`p-6 sm:p-8 rounded-3xl border shadow-2xl transition-all ${
-        theme === 'dark' ? 'bg-gradient-to-br from-gray-900/90 via-gray-900 to-[#0F172A] border-blue-500/30' : 'bg-white border-slate-200'
+      <div className={`p-6 sm:p-8 rounded-3xl border shadow-depth-md transition-all ${
+        theme === 'dark' ? 'bg-[#0B101E] border-slate-800/80' : 'bg-white border-slate-200/90'
       }`}>
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-gray-800/60">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-slate-800/60">
           <div className="space-y-1">
-            <div className="flex items-center gap-2 text-xs font-black text-blue-400 uppercase tracking-wider">
+            <div className="flex items-center gap-2 text-xs font-bold text-blue-500 uppercase tracking-wider">
               <Sparkles className="w-4 h-4 text-amber-400" />
               <span>Personalized Study Pathway Engine</span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-black tracking-tight">
+            <h2 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-white">
               What Can I Study After +2?
             </h2>
-            <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-slate-500'}`}>
+            <p className={`text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
               Select your academic background and GPA to calculate guaranteed and potential degree pathways.
             </p>
           </div>
@@ -110,7 +110,7 @@ export default function CourseIntelligence({ theme }) {
           {/* Quick Input Controls */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block text-[10px] uppercase font-bold text-gray-400 mb-1">+2 Stream</label>
+              <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">+2 Stream</label>
               <select
                 value={stream}
                 onChange={(e) => setStream(e.target.value)}

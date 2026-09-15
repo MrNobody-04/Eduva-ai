@@ -20,6 +20,10 @@ build/
 
 # Local databases & logs
 *.db
+*.db-shm
+*.db-wal
+*.db-journal
+*.sqlite
 *.sqlite3
 *.log
 backend/data/uploads/

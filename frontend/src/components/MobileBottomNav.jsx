@@ -27,10 +27,10 @@ export default function MobileBottomNav({ activeTab, setActiveTab, onOpenCopilot
                 className="flex flex-col items-center justify-center -mt-5 cursor-pointer min-w-[50px] min-h-[50px]"
                 aria-label="Ask EDUVA AI"
               >
-                <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-blue-600 to-purple-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/40 hover:scale-105 transition-all">
-                  <Bot className="w-6 h-6 animate-pulse" />
+                <div className="w-11 h-11 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-600/30 active:scale-95 transition-transform">
+                  <Bot className="w-5 h-5" />
                 </div>
-                <span className="text-[10px] font-black text-blue-400 mt-1">Ask AI</span>
+                <span className="text-[10px] font-bold text-blue-500 mt-1">Copilot</span>
               </button>
             )
           }

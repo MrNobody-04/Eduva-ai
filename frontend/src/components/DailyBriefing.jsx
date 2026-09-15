@@ -79,54 +79,54 @@ export default function DailyBriefing({
   ]
 
   return (
-    <div className="space-y-8 animate-fadeIn w-full max-w-full overflow-hidden">
+    <div className="space-y-8 animate-fadeIn w-full max-w-full overflow-hidden pb-12">
       {/* Hero Command Center Header */}
-      <div className={`p-6 sm:p-10 rounded-3xl border shadow-2xl relative overflow-hidden transition-all ${
+      <div className={`p-6 sm:p-10 rounded-3xl border shadow-depth-md relative overflow-hidden transition-all ${
         theme === 'dark' 
-          ? 'bg-gradient-to-br from-[#0B1120] via-gray-900 to-[#1E1B4B]/50 border-gray-800' 
-          : 'bg-gradient-to-br from-white via-slate-50 to-blue-50/50 border-slate-200'
+          ? 'bg-[#0B101E] border-slate-800/80' 
+          : 'bg-white border-slate-200/90'
       }`}>
-        <div className="max-w-3xl space-y-3 relative z-10">
+        <div className="max-w-3xl space-y-4 relative z-10">
           <div className="flex flex-wrap items-center gap-2 text-xs">
-            <span className="px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 font-black uppercase tracking-wider flex items-center gap-1.5">
+            <span className="px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
               <Compass className="w-3.5 h-3.5" />
               <span>EDUVA COMMAND CENTER • {location} ({province})</span>
             </span>
             {isDemoMode && (
-              <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-amber-500/15 border border-amber-500/40 text-amber-400">
+              <span className="px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase bg-amber-500/15 border border-amber-500/40 text-amber-400">
                 SIMULATION MODE ACTIVE
               </span>
             )}
           </div>
 
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight">
-            {greeting} 👋
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight text-slate-900 dark:text-white">
+            {greeting}
           </h1>
 
-          <p className={`text-xs sm:text-sm leading-relaxed ${theme === 'dark' ? 'text-gray-300' : 'text-slate-600'}`}>
+          <p className={`text-xs sm:text-sm leading-relaxed ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
             Your verified education intelligence briefing is ready. 3 critical admission deadlines are active today in Bagmati Province, with 26 national universities monitored live.
           </p>
 
           {/* Action Shortcuts */}
-          <div className="flex flex-wrap gap-2.5 pt-3">
+          <div className="flex flex-wrap gap-2.5 pt-2">
             <button
               onClick={() => onNavigateTab('courses')}
-              className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-lg shadow-blue-600/30 transition-all flex items-center gap-2 cursor-pointer"
+              className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-md shadow-blue-600/20 transition-all flex items-center gap-2 cursor-pointer active:scale-95"
             >
               <Sparkles className="w-4 h-4" />
-              <span>"What Can I Study?" Matcher</span>
+              <span>&ldquo;What Can I Study?&rdquo; Matcher</span>
             </button>
             <button
               onClick={() => onNavigateTab('compare')}
-              className={`px-4 py-2.5 rounded-xl border font-bold text-xs transition-all cursor-pointer ${
-                theme === 'dark' ? 'bg-gray-800 border-gray-700 text-gray-200 hover:bg-gray-750' : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
+              className={`px-4 py-2.5 rounded-xl border font-bold text-xs transition-all cursor-pointer active:scale-95 ${
+                theme === 'dark' ? 'bg-[#060911] border-slate-700 text-slate-200 hover:border-blue-500' : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
               }`}
             >
               <span>Compare TU vs KU</span>
             </button>
             <button
               onClick={onOpenCopilot}
-              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-purple-600/25 transition-all flex items-center gap-2 cursor-pointer"
+              className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-md shadow-blue-600/20 transition-all flex items-center gap-2 cursor-pointer active:scale-95"
             >
               <span>Ask EDUVA AI</span>
             </button>

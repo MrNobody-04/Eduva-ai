@@ -39,9 +39,13 @@ export default function AlertsAndSafety({ theme }) {
     const token = localStorage.getItem('eduva_session_token')
     if (token) {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-      const wsUrl = `${protocol}//${window.location.host}/ws/notifications?token=${encodeURIComponent(token)}`
+      const wsUrl = `${protocol}//${window.location.host}/ws/notifications`
       try {
         ws = new WebSocket(wsUrl)
+        ws.onopen = () => {
+          // Send in-band authentication frame to avoid leaking token in URLs
+          ws.send(JSON.stringify({ type: 'auth', token }))
+        }
         ws.onmessage = (e) => {
           try {
             const msg = JSON.parse(e.data)
@@ -97,16 +101,16 @@ export default function AlertsAndSafety({ theme }) {
   }
 
   return (
-    <div className="space-y-8 animate-fadeIn w-full max-w-full">
+    <div className="space-y-8 animate-fadeIn w-full max-w-full pb-12">
       {/* Banner */}
-      <div className={`p-6 sm:p-8 rounded-3xl border shadow-xl relative overflow-hidden transition-all duration-300 ${
+      <div className={`p-6 sm:p-8 rounded-3xl border shadow-depth-md relative overflow-hidden transition-all duration-300 ${
         theme === 'dark'
-          ? 'bg-gradient-to-br from-slate-900 via-[#0E1424] to-rose-950/20 border-slate-800'
-          : 'bg-gradient-to-br from-white via-slate-50 to-rose-50/30 border-slate-200'
+          ? 'bg-[#0B101E] border-slate-800/80'
+          : 'bg-white border-slate-200/90'
       }`}>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="max-w-2xl space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-500 dark:text-rose-400 text-xs font-black tracking-wide uppercase">
+          <div className="max-w-2xl space-y-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-500 dark:text-rose-400 text-xs font-bold tracking-wider uppercase">
               <Flame className="w-3.5 h-3.5" />
               <span>National Education Impact & Safety Radar</span>
             </div>

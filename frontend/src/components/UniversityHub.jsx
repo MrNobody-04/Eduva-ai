@@ -69,15 +69,15 @@ export default function UniversityHub({ theme, onOpenCopilot, onAddToTracker }) 
   }
 
   return (
-    <div className="space-y-8 animate-fadeIn w-full max-w-full overflow-hidden">
+    <div className="space-y-8 animate-fadeIn w-full max-w-full overflow-hidden pb-12">
       {/* Hero Header */}
-      <div className={`p-6 sm:p-8 rounded-3xl border shadow-xl relative overflow-hidden transition-all ${
+      <div className={`p-6 sm:p-8 rounded-3xl border shadow-depth-md relative overflow-hidden transition-all ${
         theme === 'dark' 
-          ? 'bg-gradient-to-br from-slate-900 via-gray-900 to-blue-950/40 border-gray-800' 
-          : 'bg-gradient-to-br from-white via-slate-50 to-blue-50/40 border-slate-200'
+          ? 'bg-[#0B101E] border-slate-800/80' 
+          : 'bg-white border-slate-200/90'
       }`}>
-        <div className="max-w-3xl space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-600 dark:text-blue-400 text-xs font-black uppercase tracking-wide">
+        <div className="max-w-3xl space-y-3">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-500 text-xs font-bold uppercase tracking-wider">
             <Building2 className="w-3.5 h-3.5" />
             <span>Official Nepal University & Affiliated Colleges Registry</span>
           </div>
@@ -86,7 +86,7 @@ export default function UniversityHub({ theme, onOpenCopilot, onAddToTracker }) 
           }`}>
             Nepal Universities & Affiliated Colleges Intelligence
           </h1>
-          <p className={`text-xs sm:text-sm leading-relaxed ${theme === 'dark' ? 'text-gray-300' : 'text-slate-600'}`}>
+          <p className={`text-xs sm:text-sm leading-relaxed ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
             Official directory of all 26+ national, provincial, technical, and medical universities in Nepal with their verified affiliated colleges, course offerings, fee ranges, and entrance gates.
           </p>
         </div>
@@ -101,9 +101,9 @@ export default function UniversityHub({ theme, onOpenCopilot, onAddToTracker }) 
               onClick={() => setSelectedCategory(cat.id)}
               className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
                 selectedCategory === cat.id
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-600/25'
                   : theme === 'dark'
-                    ? 'bg-gray-900 border border-gray-800 text-gray-400 hover:text-white'
+                    ? 'bg-[#0B101E] border border-slate-800/80 text-slate-400 hover:text-white'
                     : 'bg-slate-100 border border-slate-200 text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -113,14 +113,14 @@ export default function UniversityHub({ theme, onOpenCopilot, onAddToTracker }) 
         </div>
 
         <div className="relative w-full md:w-80 shrink-0">
-          <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search university or college (e.g. TU, Pulchowk, St. Xavier's)..."
             className={`w-full pl-10 pr-3 py-2.5 rounded-xl border text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              theme === 'dark' ? 'bg-gray-900 border-gray-800 text-white' : 'bg-white border-slate-300 text-slate-900 shadow-sm'
+              theme === 'dark' ? 'bg-[#0B101E] border-slate-800/80 text-white' : 'bg-white border-slate-300 text-slate-900 shadow-sm'
             }`}
           />
         </div>
@@ -251,8 +251,8 @@ export default function UniversityHub({ theme, onOpenCopilot, onAddToTracker }) 
               onClick={() => { setSelectedUniv(univ); setActiveDetailTab('overview'); }}
               className={`p-5 sm:p-6 rounded-3xl border transition-all duration-300 card-3d cursor-pointer flex flex-col justify-between group ${
                 theme === 'dark'
-                  ? 'bg-[#0E1424] border-slate-800 hover:border-blue-500/50'
-                  : 'bg-white border-slate-200 hover:border-blue-400 shadow-md hover:shadow-xl'
+                  ? 'bg-[#0B101E] border-slate-800/80 hover:border-blue-500/50 hover:shadow-depth-md'
+                  : 'bg-white border-slate-200/90 hover:border-blue-500 shadow-sm hover:shadow-depth-md'
               }`}
             >
               <div className="space-y-3">

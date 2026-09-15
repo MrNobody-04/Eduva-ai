@@ -122,20 +122,20 @@ export default function LandingPage({ onExplore, onOpenCopilot, onNavigateTab, t
     <div className="space-y-16 sm:space-y-24 animate-fadeIn pb-16">
       {/* Hero Section */}
       <section className="relative pt-6 sm:pt-12 text-center max-w-4xl mx-auto space-y-6">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-600 dark:text-blue-400 text-xs font-black uppercase tracking-wider">
-          <Sparkles className="w-3.5 h-3.5 text-blue-500 animate-spin" />
-          <span>Nepal&apos;s #1 Autonomous Higher Education Intelligence</span>
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/25 text-blue-500 text-xs font-bold uppercase tracking-wider">
+          <Sparkles className="w-3.5 h-3.5" />
+          <span>Nepal's Autonomous Higher Education Intelligence</span>
         </div>
 
-        <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight leading-[1.1] text-balance text-slate-900 dark:text-white">
-          Your intelligent guide to studying in{' '}
-          <span className="bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 dark:from-blue-400 dark:via-indigo-300 dark:to-purple-400 bg-clip-text text-transparent">
+        <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.08] text-balance text-[var(--text-heading)]">
+          The Verified Intelligence Layer for Higher Education in{' '}
+          <span className="text-blue-500">
             Nepal
           </span>
         </h1>
 
-        <p className={`text-base sm:text-lg lg:text-xl max-w-2xl mx-auto leading-relaxed font-medium ${
-          theme === 'dark' ? 'text-slate-300' : 'text-slate-700'
+        <p className={`text-base sm:text-lg lg:text-xl max-w-2xl mx-auto leading-relaxed font-normal ${
+          theme === 'dark' ? 'text-slate-300' : 'text-slate-600'
         }`}>
           Explore 27+ universities, 1,400+ colleges, verified tuition costs, entrance patterns, and cutoff metrics with zero fabrication.
         </p>
@@ -144,10 +144,10 @@ export default function LandingPage({ onExplore, onOpenCopilot, onNavigateTab, t
         <div className="pt-4 max-w-2xl mx-auto">
           <form 
             onSubmit={handlePromptSubmit}
-            className={`p-2 rounded-2xl border shadow-xl flex items-center gap-2 transition-all ${
+            className={`p-2 rounded-2xl border shadow-depth-md flex items-center gap-2 transition-all ${
               theme === 'dark' 
-                ? 'bg-[#0E1424] border-slate-700/80 focus-within:border-blue-500 shadow-blue-500/5' 
-                : 'bg-white border-slate-300 focus-within:border-blue-600 shadow-slate-200'
+                ? 'bg-[#0B101E] border-slate-800 focus-within:border-blue-500' 
+                : 'bg-white border-slate-300 focus-within:border-blue-600'
             }`}
           >
             <div className="pl-3">
@@ -164,7 +164,7 @@ export default function LandingPage({ onExplore, onOpenCopilot, onNavigateTab, t
             />
             <button
               type="submit"
-              className="btn-interactive px-4 sm:px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-black text-xs sm:text-sm transition-all shadow-md shadow-blue-600/30 hover:shadow-xl hover:shadow-blue-600/40 flex items-center gap-1.5 cursor-pointer shrink-0"
+              className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-95 text-white font-bold text-xs sm:text-sm transition-all shadow-md shadow-blue-600/25 flex items-center gap-1.5 cursor-pointer shrink-0"
             >
               <span>Ask AI</span>
               <ArrowRight className="w-4 h-4" />
@@ -173,15 +173,15 @@ export default function LandingPage({ onExplore, onOpenCopilot, onNavigateTab, t
 
           {/* Quick Prompt Pills with Hover Micro-Interactions */}
           <div className="flex flex-wrap items-center justify-center gap-2 mt-4">
-            <span className="text-[11px] font-black text-slate-500 uppercase tracking-wider">Try:</span>
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Try:</span>
             {promptChips.map((chip, idx) => (
               <button
                 key={idx}
                 onClick={() => onOpenCopilot(chip)}
-                className={`btn-interactive text-[11px] px-3.5 py-1.5 rounded-xl border transition-all cursor-pointer font-semibold ${
+                className={`text-[11px] px-3.5 py-1.5 rounded-xl border transition-all cursor-pointer font-medium active:scale-95 ${
                   theme === 'dark'
-                    ? 'bg-slate-900/80 border-slate-800 text-slate-300 hover:border-blue-500 hover:text-white hover:bg-blue-950/40 hover:shadow-md hover:shadow-blue-500/20'
-                    : 'bg-slate-100/90 border-slate-200 text-slate-800 hover:border-blue-500 hover:text-blue-700 hover:bg-blue-50 hover:shadow-md hover:shadow-blue-500/15'
+                    ? 'bg-[#0B101E] border-slate-800 text-slate-300 hover:border-blue-500 hover:text-white'
+                    : 'bg-slate-100 border-slate-200 text-slate-800 hover:border-blue-500 hover:text-blue-700'
                 }`}
               >
                 {chip}
@@ -190,11 +190,11 @@ export default function LandingPage({ onExplore, onOpenCopilot, onNavigateTab, t
           </div>
         </div>
 
-        {/* Primary Option Action Buttons with Hover Effects */}
+        {/* Primary Option Action Buttons */}
         <div className="flex flex-wrap items-center justify-center gap-3.5 pt-6">
           <button
             onClick={() => onNavigateTab('universities')}
-            className="btn-interactive px-6 py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-sm transition-all shadow-lg shadow-blue-600/30 hover:shadow-xl hover:shadow-blue-600/40 flex items-center gap-2 cursor-pointer"
+            className="px-6 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-95 text-white font-bold text-sm transition-all shadow-md shadow-blue-600/25 flex items-center gap-2 cursor-pointer"
           >
             <Building2 className="w-4 h-4" />
             <span>Explore Universities</span>
@@ -202,10 +202,10 @@ export default function LandingPage({ onExplore, onOpenCopilot, onNavigateTab, t
           
           <button
             onClick={() => onNavigateTab('entrance')}
-            className={`btn-interactive px-6 py-3.5 rounded-2xl border-2 font-black text-sm transition-all flex items-center gap-2 cursor-pointer ${
+            className={`px-6 py-3.5 rounded-xl border font-bold text-sm transition-all active:scale-95 flex items-center gap-2 cursor-pointer ${
               theme === 'dark'
-                ? 'bg-slate-900/80 border-emerald-500/40 hover:border-emerald-400 text-white hover:bg-emerald-950/40 hover:shadow-lg hover:shadow-emerald-500/20'
-                : 'bg-white border-emerald-500/50 hover:border-emerald-600 text-slate-900 hover:bg-emerald-50 hover:shadow-lg hover:shadow-emerald-500/20'
+                ? 'bg-[#0B101E] border-slate-800 hover:border-slate-700 text-white'
+                : 'bg-white border-slate-300 hover:border-slate-400 text-slate-900'
             }`}
           >
             <Calendar className="w-4 h-4 text-emerald-500" />
@@ -213,15 +213,15 @@ export default function LandingPage({ onExplore, onOpenCopilot, onNavigateTab, t
           </button>
 
           <button
-            onClick={() => onNavigateTab('briefing')}
-            className={`btn-interactive px-6 py-3.5 rounded-2xl border-2 font-black text-sm transition-all flex items-center gap-2 cursor-pointer ${
+            onClick={() => onNavigateTab('compare')}
+            className={`px-6 py-3.5 rounded-xl border font-bold text-sm transition-all active:scale-95 flex items-center gap-2 cursor-pointer ${
               theme === 'dark'
-                ? 'bg-slate-900/80 border-purple-500/40 hover:border-purple-400 text-white hover:bg-purple-950/40 hover:shadow-lg hover:shadow-purple-500/20'
-                : 'bg-white border-purple-500/50 hover:border-purple-600 text-slate-900 hover:bg-purple-50 hover:shadow-lg hover:shadow-purple-500/20'
+                ? 'bg-[#0B101E] border-slate-800 hover:border-slate-700 text-white'
+                : 'bg-white border-slate-300 hover:border-slate-400 text-slate-900'
             }`}
           >
-            <Compass className="w-4 h-4 text-purple-500" />
-            <span>Student Dashboard</span>
+            <Compass className="w-4 h-4 text-blue-400" />
+            <span>Comparison Matrix</span>
           </button>
         </div>
       </section>
@@ -258,38 +258,43 @@ export default function LandingPage({ onExplore, onOpenCopilot, onNavigateTab, t
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {featurePillars.map((p, idx) => {
             const Icon = p.icon
+            const pillarNum = `0${idx + 1}`
             return (
               <div
                 key={idx}
                 onClick={p.action}
-                className={`p-6 sm:p-8 rounded-3xl border card-3d transition-all duration-300 flex flex-col justify-between group cursor-pointer ${
+                className={`p-6 sm:p-8 rounded-3xl border card-3d transition-all duration-300 flex flex-col justify-between group cursor-pointer relative overflow-hidden ${
                   theme === 'dark'
-                    ? 'bg-[#0E1424] border-slate-800 hover:border-blue-500/50 hover:shadow-2xl hover:shadow-blue-500/10'
-                    : 'bg-white border-slate-200 hover:border-blue-500 hover:shadow-2xl hover:shadow-blue-500/15'
+                    ? 'bg-[#0B101E] border-slate-800/80 hover:border-blue-500/50 hover:shadow-depth-lg'
+                    : 'bg-white border-slate-200/90 hover:border-blue-500 hover:shadow-depth-lg'
                 }`}
               >
-                <div className="space-y-4">
+                <div className="absolute top-5 right-6 font-mono text-3xl sm:text-4xl font-black text-slate-800/30 dark:text-slate-700/20 select-none pointer-events-none tracking-tighter">
+                  {pillarNum}
+                </div>
+
+                <div className="space-y-4 relative z-10">
                   <div className="flex items-center justify-between">
                     <div className={`w-12 h-12 rounded-2xl border flex items-center justify-center group-hover:scale-110 transition-all ${p.iconColor || 'text-blue-500 bg-blue-500/10 border-blue-500/20'}`}>
                       <Icon className="w-6 h-6" />
                     </div>
-                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${p.badgeColor || 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'}`}>
+                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${p.badgeColor || 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'}`}>
                       {p.badge}
                     </span>
                   </div>
 
-                  <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                  <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white group-hover:text-blue-500 transition-colors">
                     {p.title}
                   </h3>
-                  <p className="text-xs sm:text-sm leading-relaxed text-slate-600 dark:text-slate-300 font-medium">
+                  <p className="text-xs sm:text-sm leading-relaxed text-slate-600 dark:text-slate-300 font-normal">
                     {p.description}
                   </p>
                 </div>
 
-                <div className="pt-6">
+                <div className="pt-6 relative z-10">
                   <button
                     onClick={(e) => { e.stopPropagation(); p.action(); }}
-                    className="btn-interactive inline-flex items-center gap-2 text-xs font-black text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 group-hover:translate-x-1 transition-all cursor-pointer"
+                    className="inline-flex items-center gap-2 text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-500 group-hover:translate-x-1 transition-all cursor-pointer"
                   >
                     <span>{p.actionText}</span>
                     <ArrowRight className="w-4 h-4" />
@@ -298,6 +303,56 @@ export default function LandingPage({ onExplore, onOpenCopilot, onNavigateTab, t
               </div>
             )
           })}
+        </div>
+      </section>
+
+      {/* Key National Gateways Strip */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-bold uppercase tracking-widest text-blue-500">Fast Access</span>
+            <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">Primary Education Gateways</h3>
+          </div>
+          <button 
+            onClick={() => onNavigateTab('universities')}
+            className="text-xs font-semibold text-blue-500 hover:underline flex items-center gap-1 cursor-pointer"
+          >
+            <span>View All 27+</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+          {[
+            { name: "Tribhuvan University", code: "TU Kirtipur", tag: "Central", tab: "universities" },
+            { name: "Kathmandu University", code: "KU Dhulikhel", tag: "Autonomous", tab: "universities" },
+            { name: "IOE Pulchowk", code: "Engineering", tag: "Entrance", tab: "entrance" },
+            { name: "Pokhara University", code: "PU Pokhara", tag: "Regional", tab: "universities" },
+            { name: "Medical Edu Commission", code: "MEC CEE", tag: "National", tab: "entrance" }
+          ].map((gw, idx) => (
+            <div
+              key={idx}
+              onClick={() => onNavigateTab(gw.tab)}
+              className={`p-4 rounded-2xl border transition-all cursor-pointer card-3d group ${
+                theme === 'dark' 
+                  ? 'bg-[#0B101E] border-slate-800/80 hover:border-blue-500/50' 
+                  : 'bg-white border-slate-200/90 hover:border-blue-500'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-500 border border-blue-500/20">
+                  {gw.tag}
+                </span>
+                <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-500 group-hover:translate-x-0.5 transition-all" />
+              </div>
+              <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-blue-500 transition-colors line-clamp-1">
+                {gw.name}
+              </h4>
+              <p className="text-[11px] text-slate-500 font-mono mt-0.5">
+                {gw.code}
+              </p>
+            </div>
+          ))}
         </div>
       </section>
 

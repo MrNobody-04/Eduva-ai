@@ -23,9 +23,9 @@ EDUVA AI is an autonomous higher education discovery, verification, and admissio
 4. **Multi-Entity Comparison Matrix**:
    - Side-by-side comparison of up to 4 universities or colleges across affiliations, constituent campuses, entrance gates, and fee structures.
 
-5. **Official Entrance Registry & PDF Scorecards**:
-   - Searchable entrance examination merit ranks across IOE Engineering, CEE Medical, KUCAT KU, CMAT Management, and CSIT.
-   - Direct 1-click printable and downloadable PDF merit scorecards with digital verification credentials.
+5. **Retrieved Public Entrance Merit Archives & AI Result Analysis**:
+   - Searchable records aggregated from public merit publications across IOE Engineering, CEE Medical, KUCAT KU, CMAT Management, and CSIT.
+   - 1-click printable and downloadable scorecard analysis with digital source citations and transparent verification disclaimers.
 
 6. **Context-Aware Multilingual Conversational AI**:
    - Natural dialogue understanding in English, Devanagari Nepali, and Romanized Nepglish.

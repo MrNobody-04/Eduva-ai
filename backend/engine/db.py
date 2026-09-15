@@ -289,6 +289,14 @@ class LivingDatabase:
                 cursor.execute("ALTER TABLE users ADD COLUMN verification_token_expires TIMESTAMP")
             except Exception:
                 pass
+            try:
+                cursor.execute("ALTER TABLE chat_messages ADD COLUMN student_id TEXT")
+            except Exception:
+                pass
+            try:
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_chat_sess_std ON chat_messages(session_id, student_id)")
+            except Exception:
+                pass
         self._execute_write(run_migrations)
 
     # --- News Feed Operations ---
@@ -315,26 +323,36 @@ class LivingDatabase:
         self._execute_write(write_op)
 
     # --- Chat History Operations ---
-    def log_chat(self, session_id: str, sender: str, message: str, lang: str = "auto", is_voice: bool = False):
+    def log_chat(self, session_id: str, sender: str, message: str, lang: str = "auto", is_voice: bool = False, student_id: Optional[str] = None):
         def write_op(conn):
             cursor = conn.cursor()
             cursor.execute("""
-            INSERT INTO chat_messages (session_id, sender, message, language_detected, audio_transcript)
-            VALUES (?, ?, ?, ?, ?)
-            """, (session_id, sender, message, lang, 1 if is_voice else 0))
+            INSERT INTO chat_messages (session_id, student_id, sender, message, language_detected, audio_transcript)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """, (session_id, student_id, sender, message, lang, 1 if is_voice else 0))
         self._execute_write(write_op)
 
-    def get_chat_history(self, session_id: str = "default_session", limit: int = 40) -> List[Dict[str, Any]]:
+    def get_chat_history(self, session_id: str = "default_session", student_id: Optional[str] = None, limit: int = 40) -> List[Dict[str, Any]]:
         with self._get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT * FROM chat_messages WHERE session_id = ? ORDER BY id ASC LIMIT ?", (session_id, limit))
+            if student_id:
+                cursor.execute("""
+                SELECT * FROM chat_messages 
+                WHERE session_id = ? AND (student_id = ? OR student_id IS NULL)
+                ORDER BY id ASC LIMIT ?
+                """, (session_id, student_id, limit))
+            else:
+                cursor.execute("SELECT * FROM chat_messages WHERE session_id = ? ORDER BY id ASC LIMIT ?", (session_id, limit))
             rows = cursor.fetchall()
             return [dict(row) for row in rows]
 
-    def delete_chat_history(self, session_id: str = "default_session") -> bool:
+    def delete_chat_history(self, session_id: str = "default_session", student_id: Optional[str] = None) -> bool:
         def write_op(conn):
             cursor = conn.cursor()
-            cursor.execute("DELETE FROM chat_messages WHERE session_id = ?", (session_id,))
+            if student_id:
+                cursor.execute("DELETE FROM chat_messages WHERE session_id = ? AND (student_id = ? OR student_id IS NULL)", (session_id, student_id))
+            else:
+                cursor.execute("DELETE FROM chat_messages WHERE session_id = ?", (session_id,))
         self._execute_write(write_op)
         return True
 

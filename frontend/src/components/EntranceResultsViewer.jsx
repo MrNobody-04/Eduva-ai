@@ -26,23 +26,23 @@ export default function EntranceResultsViewer({ results = [], theme }) {
   }
 
   return (
-    <div className="space-y-6 sm:space-y-8 animate-fadeIn w-full max-w-full overflow-hidden">
+    <div className="space-y-6 sm:space-y-8 animate-fadeIn w-full max-w-full overflow-hidden pb-12">
       {/* Header */}
-      <div className={`p-5 sm:p-8 rounded-3xl border shadow-xl relative overflow-hidden transition-all ${
+      <div className={`p-5 sm:p-8 rounded-3xl border shadow-depth-md relative overflow-hidden transition-all ${
         theme === 'dark' 
-          ? 'bg-gradient-to-br from-slate-900 via-blue-950/40 to-indigo-950/30 border-gray-800' 
-          : 'bg-gradient-to-br from-white via-blue-50/40 to-indigo-50/30 border-blue-200/60'
+          ? 'bg-[#0B101E] border-slate-800/80' 
+          : 'bg-white border-slate-200/90'
       }`}>
-        <div className="max-w-2xl space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-500 text-xs font-black tracking-wide uppercase">
+        <div className="max-w-2xl space-y-3">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-500 text-xs font-bold tracking-wider uppercase">
             <ShieldCheck className="w-3.5 h-3.5" />
             <span>Retrieved Public Entrance Merit Registry</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-slate-900 dark:text-white">
             Nepal University Entrance Merit Archives & Records
           </h1>
           <p className={`text-xs sm:text-sm leading-relaxed ${
-            theme === 'dark' ? 'text-gray-300' : 'text-slate-600'
+            theme === 'dark' ? 'text-slate-300' : 'text-slate-600'
           }`}>
             Search authentic records retrieved from public merit publications for IOE Engineering, CEE Medical, KUCAT KU, CMAT Management, and CSIT. View and print verified examination records with source provenance.
           </p>
@@ -50,14 +50,14 @@ export default function EntranceResultsViewer({ results = [], theme }) {
 
         {/* Search Bar */}
         <div className="mt-6 max-w-xl relative">
-          <Search className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search by student name, roll number, or institution..."
             className={`w-full pl-11 pr-4 py-3 rounded-2xl border text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${
-              theme === 'dark' ? 'bg-gray-800/80 border-gray-700 text-white' : 'bg-white border-slate-300 text-slate-900'
+              theme === 'dark' ? 'bg-[#060911] border-slate-700 text-white' : 'bg-white border-slate-300 text-slate-900'
             }`}
           />
         </div>
@@ -68,22 +68,22 @@ export default function EntranceResultsViewer({ results = [], theme }) {
         {filtered.map((r) => (
           <div
             key={r.roll_number}
-            className={`p-5 sm:p-6 rounded-3xl border transition-all hover:shadow-2xl flex flex-col justify-between ${
+            className={`p-5 sm:p-6 rounded-3xl border transition-all duration-300 card-3d flex flex-col justify-between group ${
               theme === 'dark'
-                ? 'bg-gray-900/80 border-gray-800 hover:border-gray-700'
-                : 'bg-white border-slate-200 hover:border-slate-300'
+                ? 'bg-[#0B101E] border-slate-800/80 hover:border-blue-500/50 hover:shadow-depth-md'
+                : 'bg-white border-slate-200/90 hover:border-blue-500 hover:shadow-depth-md'
             }`}
           >
             <div className="space-y-3">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-500/10 border border-blue-500/30 text-blue-400">
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-blue-500/10 border border-blue-500/30 text-blue-500">
                     Rank #{r.merit_rank}
                   </span>
-                  <h3 className="text-base font-black mt-2 tracking-tight">
+                  <h3 className="text-base font-bold mt-2 tracking-tight text-slate-900 dark:text-white group-hover:text-blue-500 transition-colors">
                     {r.candidate_name}
                   </h3>
-                  <p className="text-xs opacity-70">Roll: {r.roll_number}</p>
+                  <p className="text-xs text-slate-400 font-mono">Roll: {r.roll_number}</p>
                 </div>
 
                 <div className="p-2 rounded-2xl bg-blue-500/10 text-blue-500">
@@ -91,10 +91,10 @@ export default function EntranceResultsViewer({ results = [], theme }) {
                 </div>
               </div>
 
-              <div className="space-y-1.5 text-xs pt-2 border-t border-gray-800/40">
+              <div className="space-y-1.5 text-xs pt-2 border-t border-slate-800/40">
                 <div className="flex items-center justify-between">
-                  <span className="opacity-60">Program:</span>
-                  <span className="font-bold text-blue-400">{r.program_applied}</span>
+                  <span className="text-slate-400">Program:</span>
+                  <span className="font-bold text-blue-500">{r.program_applied}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="opacity-60">Institution:</span>
@@ -141,12 +141,12 @@ export default function EntranceResultsViewer({ results = [], theme }) {
             <div id="printable-scorecard" className="border-4 border-double border-blue-500/40 p-6 rounded-2xl space-y-4">
               <div className="text-center space-y-1 border-b pb-4 border-gray-700/50">
                 <span className="text-[10px] uppercase font-black tracking-widest text-blue-500 block">
-                  EDUVA AI • RETRIEVED EXAMINATION RECORD
+                  EDUVA ENTRANCE RESULT ANALYSIS
                 </span>
                 <h2 className="text-xl sm:text-2xl font-black tracking-tight">
-                  PUBLIC ENTRANCE MERIT RECORD
+                  Eduva Entrance Result Analysis
                 </h2>
-                <p className="text-xs opacity-70">Academic Session 2026/27 • Public Merit Archive</p>
+                <p className="text-xs opacity-70">Academic Session 2026/27 • Verified Result Analysis</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4 text-xs py-2">
@@ -181,10 +181,10 @@ export default function EntranceResultsViewer({ results = [], theme }) {
                 <CheckCircle2 className="w-4 h-4" />
               </div>
 
-              {/* Honest Provenance & Advisory Notice */}
-              <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-[11px] leading-relaxed text-blue-300">
-                <span className="font-bold block text-blue-400 mb-1">Source & Provenance Notice:</span>
-                This record was indexed from public merit publications by Eduva AI's autonomous verification pipeline. For official institutional enrollment confirmation, consult the institution's primary portal directly.
+              {/* Mandatory Official Disclaimer Notice */}
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-[11px] leading-relaxed text-amber-300">
+                <span className="font-bold block text-amber-400 mb-1">Disclaimer:</span>
+                AI-generated analysis based on submitted/result data. Not an official examination document. For official institutional confirmation, consult the institution's primary examination portal directly.
               </div>
 
               <div className="pt-4 border-t border-gray-700/50 flex items-center justify-between text-[10px] opacity-60">

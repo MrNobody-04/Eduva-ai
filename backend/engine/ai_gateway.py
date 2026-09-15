@@ -169,6 +169,7 @@ class AIGateway:
         self.capability_matrix = {
             # Real-time and low latency tasks
             "REALTIME_CHAT": ["groq", "gemini", "openrouter", "cloudflare"],
+            "COMPARISON_ANALYSIS": ["groq", "gemini", "cloudflare", "openrouter"],
             "INTENT_CLASSIFICATION": ["groq", "cloudflare", "gemini"],
             "QUERY_CLASSIFICATION": ["groq", "cloudflare", "gemini"],
             "NEWS_CLASSIFICATION": ["groq", "cloudflare", "gemini"],

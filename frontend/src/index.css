@@ -4,16 +4,16 @@
 
 @layer base {
   :root {
-    --bg-main: #080C14;
-    --surface-1: #0E1424;
-    --surface-2: #141C30;
-    --surface-3: #1C2640;
-    --card-bg: #0E1424;
-    --input-bg: #141C30;
+    --bg-main: #060911;
+    --surface-1: #0B101E;
+    --surface-2: #11182B;
+    --surface-3: #18223C;
+    --card-bg: #0B101E;
+    --input-bg: #11182B;
     --border-subtle: rgba(255, 255, 255, 0.08);
-    --border-highlight: rgba(59, 130, 246, 0.35);
-    --primary: #3B82F6;
-    --primary-glow: rgba(59, 130, 246, 0.2);
+    --border-highlight: rgba(59, 130, 246, 0.4);
+    --primary: #2563EB;
+    --primary-glow: rgba(37, 99, 235, 0.2);
     --text-primary: #F8FAFC;
     --text-secondary: #94A3B8;
     --text-muted: #64748B;
@@ -27,10 +27,10 @@
     --surface-3: #E2E8F0;
     --card-bg: #FFFFFF;
     --input-bg: #F8FAFC;
-    --border-subtle: rgba(0, 0, 0, 0.09);
-    --border-highlight: rgba(37, 99, 235, 0.45);
+    --border-subtle: rgba(0, 0, 0, 0.08);
+    --border-highlight: rgba(37, 99, 235, 0.4);
     --primary: #2563EB;
-    --primary-glow: rgba(37, 99, 235, 0.15);
+    --primary-glow: rgba(37, 99, 235, 0.12);
     --text-primary: #0F172A;
     --text-secondary: #334155;
     --text-muted: #64748B;

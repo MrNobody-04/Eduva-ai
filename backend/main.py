@@ -34,7 +34,7 @@ from engine.ai_gateway import global_ai_gateway
 from engine.auth import (
     verify_admin_key, require_admin_user, create_session_token, verify_session_token,
     get_authenticated_session, verify_ws_session, hash_password, verify_password,
-    validate_and_normalize_email, generate_verification_token
+    validate_and_normalize_email, generate_verification_token, extract_token_from_request
 )
 from engine.rate_limiter import limiter, check_ws_rate_limit, RateLimitExceeded, _rate_limit_exceeded_handler
 from engine.notification_stream import global_notification_broadcaster
@@ -297,6 +297,40 @@ async def login_student(req: LoginRequest, request: Request):
         "session_id": session_id,
         "student_id": user_id,
         "token": token
+    }
+
+
+@app.api_route("/api/auth/session", methods=["GET", "POST"])
+@limiter.limit("30/minute")
+async def get_or_create_session(request: Request):
+    """
+    Cryptographic session token issuance and verification for client interactions.
+    - If client provides a valid HMAC-SHA256 session token, confirms it.
+    - If missing, invalid, or expired, issues a new signed cryptographic guest session token.
+    Fails closed: Identity is always derived from server-side cryptographic signatures.
+    """
+    token = extract_token_from_request(request)
+    if token:
+        payload = verify_session_token(token)
+        if payload:
+            return {
+                "status": "VALID",
+                "session_id": payload.get("session_id"),
+                "student_id": payload.get("student_id"),
+                "role": payload.get("role", "student"),
+                "token": token
+            }
+    
+    # Issue a new signed session token
+    new_sess_id = f"sess_{uuid.uuid4().hex[:12]}"
+    new_student_id = f"std_guest_{uuid.uuid4().hex[:8]}"
+    signed_token = create_session_token(new_sess_id, new_student_id, role="guest")
+    return {
+        "status": "ISSUED",
+        "session_id": new_sess_id,
+        "student_id": new_student_id,
+        "role": "guest",
+        "token": signed_token
     }
 
 
@@ -750,19 +784,31 @@ async def analyze_comparison_with_ai(request: Request, req: CompareAIRequest):
     names = [e["name"] for e in entities]
     context = f"Comparing: {', '.join(names)}.\nDetailed Entities: {entities[:3]}"
     
-    gemini_res = global_gemini_service.generate_chat_response(
-        user_query=req.question or "Provide an objective comparative evaluation of these institutions.",
-        context_summary=context
-    )
+    try:
+        ai_res = await global_ai_gateway.execute(
+            task_type="COMPARISON_ANALYSIS",
+            prompt=f"Context:\n{context}\n\nQuestion: {req.question or 'Provide an objective comparative evaluation of these institutions.'}",
+            system_prompt="You are an expert Nepali higher education counselor. Provide concise, factual, objective comparative analysis comparing fees, quota seats, affiliation, and academic standing without generic clichés.",
+            priority="USER_INTERACTIVE",
+            max_tokens=1000
+        )
+        analysis_text = ai_res.get("content", "").strip()
+        provider_used = ai_res.get("provider", "ai_gateway")
+    except Exception:
+        gemini_res = global_gemini_service.generate_chat_response(
+            user_query=req.question or "Provide an objective comparative evaluation of these institutions.",
+            context_summary=context
+        )
+        analysis_text = gemini_res.get("text", "")
+        provider_used = gemini_res.get("key_used", "Local Fallback")
     
-    analysis_text = gemini_res.get("text", "")
     if not analysis_text:
         analysis_text = f"Comparing {', '.join(names)}: Each institution has distinct advantages. Look closely at constituent fee quotas vs. affiliated private college fees."
         
     return {
         "analysis": analysis_text,
         "entities_compared": names,
-        "key_used": gemini_res.get("key_used", "Local Fallback"),
+        "key_used": provider_used,
         "source": "EDUVA AI Comparative Reasoning Engine"
     }
 
@@ -810,7 +856,7 @@ class SopDraftRequest(BaseModel):
 @app.post("/api/draft-document")
 @limiter.limit("10/minute")
 async def draft_academic_document(request: Request, req: SopDraftRequest):
-    return global_sop_drafter.generate_document(
+    return await global_sop_drafter.generate_document_ai(
         doc_type=req.doc_type,
         student_name=req.student_name,
         gpa=req.gpa,
@@ -1162,7 +1208,8 @@ async def get_chat_history(
     session: Dict[str, str] = Depends(get_authenticated_session)
 ):
     active_session_id = session.get("session_id") or session_id
-    return global_db.get_chat_history(active_session_id)
+    active_student_id = session.get("student_id")
+    return global_db.get_chat_history(session_id=active_session_id, student_id=active_student_id)
 
 @app.delete("/api/chat/history")
 @app.delete("/api/copilot/history")
@@ -1171,7 +1218,8 @@ async def delete_chat_history(
     session: Dict[str, str] = Depends(get_authenticated_session)
 ):
     active_session_id = session.get("session_id") or session_id
-    global_db.delete_chat_history(active_session_id)
+    active_student_id = session.get("student_id")
+    global_db.delete_chat_history(session_id=active_session_id, student_id=active_student_id)
     copilot_agent.clear_session(active_session_id)
     return {"status": "success", "message": f"Session {active_session_id} history deleted"}
 
