@@ -95,6 +95,20 @@ button, input, textarea, select { font: inherit; }
 .theme-light .app-view .text-slate-600, .theme-light .app-view .text-slate-700 { color: var(--text-secondary) !important; }
 .theme-light .app-view .text-slate-400, .theme-light .app-view .text-slate-500 { color: var(--text-muted) !important; }
 
+/* gray-* Tailwind classes were left out of the original slate-* remap above, so any
+   component authored with bg/text/border-gray-* (13 components, 300+ occurrences)
+   was rendering literal dark-mode-only grays in light mode. Mirror the same remap. */
+.theme-light .app-view [class*="bg-gray-900"] { background-color: var(--surface-1) !important; }
+.theme-light .app-view [class*="bg-gray-800"] { background-color: var(--surface-2) !important; }
+.theme-light .app-view [class*="bg-gray-700"] { background-color: var(--surface-3) !important; }
+.theme-light .app-view [class*="border-gray-800"],
+.theme-light .app-view [class*="border-gray-700"],
+.theme-light .app-view [class*="border-gray-600"] { border-color: var(--border-subtle) !important; }
+.theme-light .app-view [class*="text-gray-400"],
+.theme-light .app-view [class*="text-gray-500"] { color: var(--text-muted) !important; }
+.theme-light .app-view [class*="text-gray-300"],
+.theme-light .app-view [class*="text-gray-200"] { color: var(--text-secondary) !important; }
+
 /* Modals become focused research sheets rather than dark dashboard overlays. */
 .theme-light .fixed.inset-0.z-50 { background-color: rgba(17,24,39,.24) !important; backdrop-filter: blur(4px); }
 .theme-light .fixed.inset-0.z-50 > [class*="rounded"] { border-radius: 16px !important; box-shadow: 0 20px 60px rgba(15,23,42,.16) !important; }

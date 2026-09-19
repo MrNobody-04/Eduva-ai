@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { motion } from 'framer-motion'
 import { 
   Building2, MapPin, Search, ExternalLink, GraduationCap, 
   Award, ShieldCheck, CheckCircle2, ChevronRight, X
@@ -82,9 +83,13 @@ export default function CollegesDirectory({ colleges = [], theme, onAddToTracker
 
       {/* Colleges Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-        {filtered.map((college) => (
-          <div
+        {filtered.map((college, idx) => (
+          <motion.div
             key={college.id}
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: Math.min(idx, 8) * 0.04, duration: 0.32, ease: 'easeOut' }}
+            whileHover={{ y: -5 }}
             onClick={() => setSelectedCollege(college)}
             className={`p-5 sm:p-6 rounded-3xl border transition-all duration-300 card-3d cursor-pointer flex flex-col justify-between group ${
               theme === 'dark'
@@ -129,7 +134,7 @@ export default function CollegesDirectory({ colleges = [], theme, onAddToTracker
               <span>View Verified Details</span>
               <ChevronRight className="w-4 h-4" />
             </div>
-          </div>
+          </motion.div>
         ))}
       </div>
 
