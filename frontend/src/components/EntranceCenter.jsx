@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
 import { 
   Calendar, Clock, BookOpen, AlertCircle, FileText, 
   ExternalLink, Search, CheckCircle2, ChevronRight, X, ShieldCheck
@@ -117,14 +118,17 @@ export default function EntranceCenter({ theme }) {
 
       {/* Exams Grid with 3D Hover Effects & High Contrast */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredExams.map((exam) => {
+        {filteredExams.map((exam, idx) => {
           const badge = getUrgencyBadge(exam)
           const deadline = exam.registration_deadline || exam.application_deadline || 'Announced Soon'
           const fee = exam.exam_fee || exam.application_fee || 'Standard Quota'
           return (
-            <div
+            <motion.div
               key={exam.id}
-              className={`card-3d p-6 rounded-3xl border transition-all duration-300 flex flex-col justify-between group ${
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: Math.min(idx, 8) * 0.05, duration: 0.32, ease: 'easeOut' }}
+              className={`card-3d p-6 rounded-3xl border transition-colors duration-300 flex flex-col justify-between group ${
                 theme === 'dark'
                   ? 'bg-[#0B101E] border-slate-800/80 hover:border-blue-500/50 hover:shadow-depth-md'
                   : 'bg-white border-slate-200/90 hover:border-blue-500 hover:shadow-depth-md'
@@ -205,7 +209,7 @@ export default function EntranceCenter({ theme }) {
                   </a>
                 )}
               </div>
-            </div>
+            </motion.div>
           )
         })}
       </div>

@@ -1,4 +1,5 @@
 import React from 'react'
+import { motion } from 'framer-motion'
 import { 
   Compass, Calendar, Clock, AlertTriangle, ArrowRight, 
   Sparkles, Building2, BookOpen, GraduationCap, CheckCircle2, ShieldCheck, Flame
@@ -142,9 +143,13 @@ export default function DailyBriefing({
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {upcomingDeadlines.map((dl, idx) => (
-            <div
+            <motion.div
               key={idx}
-              className={`p-5 rounded-3xl border transition-all hover:shadow-xl flex flex-col justify-between ${
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.06, duration: 0.32, ease: 'easeOut' }}
+              whileHover={{ y: -4 }}
+              className={`p-5 rounded-3xl border transition-colors hover:shadow-xl flex flex-col justify-between ${
                 theme === 'dark' ? 'bg-gray-900/80 border-gray-800' : 'bg-white border-slate-200'
               }`}
             >
@@ -215,7 +220,7 @@ export default function DailyBriefing({
                   )}
                 </div>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       </div>

@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { motion } from 'framer-motion'
 import { 
   Heart, MessageCircle, Send, Bookmark, MoreHorizontal, 
   Flame, CheckCircle2, Share2, Sparkles, AlertCircle, Clock, Image as ImageIcon 
@@ -99,16 +100,19 @@ export default function NewsPortal({ newsFeed = [], onLikeNews, theme = 'dark' }
 
       {/* Instagram Feed Stream */}
       <div className="space-y-6">
-        {filteredNews.map(item => {
+        {filteredNews.map((item, idx) => {
           const isLiked = likedPosts[item.id]
           const isSaved = savedPosts[item.id]
           const baseLikes = item.likes_count || 1420
           const displayLikes = isLiked ? baseLikes + 1 : baseLikes
 
           return (
-            <article
+            <motion.article
               key={item.id}
-              className={`rounded-3xl border overflow-hidden shadow-xl transition-all card-hover-effect ${cardBg}`}
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: Math.min(idx, 6) * 0.06, duration: 0.32, ease: 'easeOut' }}
+              className={`rounded-3xl border overflow-hidden shadow-xl card-3d ${cardBg}`}
             >
               {/* Instagram Post Header */}
               <div className="p-4 sm:p-5 flex items-center justify-between border-b border-gray-800/60">
@@ -226,7 +230,7 @@ export default function NewsPortal({ newsFeed = [], onLikeNews, theme = 'dark' }
                 </div>
               </div>
 
-            </article>
+            </motion.article>
           )
         })}
       </div>

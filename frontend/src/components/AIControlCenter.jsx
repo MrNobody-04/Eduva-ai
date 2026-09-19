@@ -491,7 +491,7 @@ export default function AIControlCenter({ theme }) {
             {telemetry?.sources?.map((src) => (
               <div key={src.sourceId} className="p-3.5 rounded-2xl bg-gray-800/40 border border-gray-700/50 flex items-center justify-between text-xs">
                 <div>
-                  <span className="font-bold block text-white">{src.name}</span>
+                  <span className="font-bold block text-slate-900 dark:text-white">{src.name}</span>
                   <span className="text-[10px] text-gray-400 block">{src.url}</span>
                   <span className="text-[9px] text-blue-400 font-bold uppercase">{src.authorityLevel}</span>
                 </div>

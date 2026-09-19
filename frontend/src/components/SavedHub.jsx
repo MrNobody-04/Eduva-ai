@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
 import { Bookmark, Building2, BookOpen, GraduationCap, Calendar, Trash2, ArrowRight, ExternalLink } from 'lucide-react'
 
 export default function SavedHub({ theme, onNavigateTab }) {
@@ -91,10 +92,14 @@ export default function SavedHub({ theme, onNavigateTab }) {
 
       {/* Grid of Saved Items */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filtered.map(item => (
-          <div
+        {filtered.map((item, idx) => (
+          <motion.div
             key={item.id}
-            className={`p-6 rounded-3xl border flex flex-col justify-between group transition-all ${
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: Math.min(idx, 8) * 0.05, duration: 0.3, ease: 'easeOut' }}
+            whileHover={{ y: -4 }}
+            className={`p-6 rounded-3xl border flex flex-col justify-between group transition-colors ${
               theme === 'dark'
                 ? 'bg-[#0E1424] border-slate-800 hover:border-blue-500/40'
                 : 'bg-white border-slate-200 hover:border-blue-400 shadow-sm'
@@ -141,7 +146,7 @@ export default function SavedHub({ theme, onNavigateTab }) {
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
-          </div>
+          </motion.div>
         ))}
 
         {filtered.length === 0 && !loading && (

@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { motion } from 'framer-motion'
 import { Award, CheckCircle2, ExternalLink, Search, Clock, DollarSign, Sparkles, GraduationCap } from 'lucide-react'
 
 export default function ScholarshipsPortal({ theme = 'dark' }) {
@@ -106,10 +107,13 @@ export default function ScholarshipsPortal({ theme = 'dark' }) {
 
       {/* Scholarship Cards */}
       <div className="space-y-4">
-        {filtered.map(item => (
-          <div
+        {filtered.map((item, idx) => (
+          <motion.div
             key={item.id}
-            className={`rounded-3xl border p-6 space-y-4 transition-all card-hover-effect ${cardBg}`}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: Math.min(idx, 8) * 0.05, duration: 0.3, ease: 'easeOut' }}
+            className={`rounded-3xl border p-6 space-y-4 card-3d ${cardBg}`}
           >
             <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
               <div>
@@ -147,7 +151,7 @@ export default function ScholarshipsPortal({ theme = 'dark' }) {
               </button>
             </div>
 
-          </div>
+          </motion.div>
         ))}
       </div>
 
