@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
 import { 
   Mail, Shield, ShieldAlert, ShieldCheck, Trash2, CheckCircle2, 
   AlertTriangle, RefreshCw, Lock, Search, FileText, Send, Sparkles, Inbox
@@ -173,11 +174,14 @@ export default function EmailGuardian({ theme }) {
             </div>
 
             <div className="space-y-2.5 max-h-[550px] overflow-y-auto pr-1">
-              {inbox.map((mail) => (
-                <div
+              {inbox.map((mail, idx) => (
+                <motion.div
                   key={mail.id}
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: Math.min(idx, 10) * 0.03, duration: 0.25, ease: 'easeOut' }}
                   onClick={() => setSelectedMail(mail)}
-                  className={`p-4 rounded-2xl border cursor-pointer transition-all ${
+                  className={`p-4 rounded-2xl border cursor-pointer transition-colors ${
                     selectedMail?.id === mail.id
                       ? 'border-blue-500 ring-2 ring-blue-500/20'
                       : theme === 'dark' ? 'border-gray-800 hover:border-gray-700' : 'border-slate-200 hover:border-slate-300'
@@ -209,7 +213,7 @@ export default function EmailGuardian({ theme }) {
                     <span>{mail.received_at}</span>
                     <span>{mail.sender}</span>
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
           </div>

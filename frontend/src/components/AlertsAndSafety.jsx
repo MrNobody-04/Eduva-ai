@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
 import { 
   AlertTriangle, ShieldAlert, MapPin, Building2, Flame, 
   CheckCircle2, Clock, Calendar, ExternalLink, RefreshCw 
@@ -160,12 +161,15 @@ export default function AlertsAndSafety({ theme }) {
 
       {/* Alerts Grid with 3D Hover Effects */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {alerts.map(alert => {
+        {alerts.map((alert, idx) => {
           const style = getSeverityStyle(alert.severity)
           return (
-            <div
-              key={alert.id || Math.random()}
-              className={`card-3d p-6 sm:p-8 rounded-3xl border transition-all duration-300 flex flex-col justify-between hover:shadow-2xl ${
+            <motion.div
+              key={alert.id || idx}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: Math.min(idx, 8) * 0.05, duration: 0.3, ease: 'easeOut' }}
+              className={`card-3d p-6 sm:p-8 rounded-3xl border duration-300 flex flex-col justify-between hover:shadow-2xl ${
                 theme === 'dark' 
                   ? `bg-[#0E1424] ${style.card}` 
                   : `bg-white border-slate-200 shadow-md ${style.card}`
@@ -268,7 +272,7 @@ export default function AlertsAndSafety({ theme }) {
                   <span className="font-semibold text-emerald-500">Active Monitoring</span>
                 )}
               </div>
-            </div>
+            </motion.div>
           )
         })}
 

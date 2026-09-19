@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
 import { 
   Briefcase, Calendar, FileText, ExternalLink, Search, 
   CheckCircle2, Clock, Building, Award, AlertCircle, 
@@ -169,10 +170,13 @@ export default function LoksewaRadar({ theme, onOpenCopilot }) {
       {/* Tab 1: Vacancies */}
       {activeTab === 'vacancies' && (
         <div className="space-y-6">
-          {filteredVacancies.map((item) => (
-            <div
+          {filteredVacancies.map((item, idx) => (
+            <motion.div
               key={item.id}
-              className={`p-6 sm:p-7 rounded-3xl border card-3d shadow-sm transition-all ${
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: Math.min(idx, 8) * 0.05, duration: 0.3, ease: 'easeOut' }}
+              className={`p-6 sm:p-7 rounded-3xl border card-3d shadow-sm ${
                 theme === 'dark' ? 'bg-[#0E1424] border-slate-800' : 'bg-white border-slate-200'
               }`}
             >
@@ -256,7 +260,7 @@ export default function LoksewaRadar({ theme, onOpenCopilot }) {
                   ))}
                 </div>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       )}
@@ -264,9 +268,12 @@ export default function LoksewaRadar({ theme, onOpenCopilot }) {
       {/* Tab 2: Results */}
       {activeTab === 'results' && (
         <div className="space-y-4">
-          {results.map((res) => (
-            <div
+          {results.map((res, idx) => (
+            <motion.div
               key={res.id}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: Math.min(idx, 8) * 0.05, duration: 0.3, ease: 'easeOut' }}
               className={`p-6 rounded-3xl border card-3d shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
                 theme === 'dark' ? 'bg-[#0E1424] border-slate-800' : 'bg-white border-slate-200'
               }`}
@@ -301,7 +308,7 @@ export default function LoksewaRadar({ theme, onOpenCopilot }) {
                 <span>View Official Notice</span>
                 <ExternalLink className="w-3.5 h-3.5" />
               </a>
-            </div>
+            </motion.div>
           ))}
         </div>
       )}
@@ -311,8 +318,11 @@ export default function LoksewaRadar({ theme, onOpenCopilot }) {
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {calendar.map((cal, i) => (
-              <div
+              <motion.div
                 key={i}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: Math.min(i, 8) * 0.04, duration: 0.28, ease: 'easeOut' }}
                 className={`p-6 rounded-3xl border card-3d shadow-sm space-y-2 ${
                   theme === 'dark' ? 'bg-[#0E1424] border-slate-800' : 'bg-white border-slate-200'
                 }`}
@@ -327,7 +337,7 @@ export default function LoksewaRadar({ theme, onOpenCopilot }) {
                 <p className="text-xs text-slate-500 dark:text-slate-400">
                   Conducting Authority: {cal.authority}
                 </p>
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>

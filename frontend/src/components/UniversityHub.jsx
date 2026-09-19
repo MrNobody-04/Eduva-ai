@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
 import { 
   Building2, MapPin, Globe, Award, BookOpen, Search, 
   ExternalLink, CheckCircle2, ChevronRight, ShieldCheck, Phone, Mail, Users, GraduationCap, Bot, Sparkles
@@ -263,13 +264,16 @@ export default function UniversityHub({ theme, onOpenCopilot, onAddToTracker }) 
 
       {/* University Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-        {filteredUniversities.map((univ) => {
+        {filteredUniversities.map((univ, idx) => {
           const affilCount = getAffiliatedColleges(univ).length
           return (
-            <div
+            <motion.div
               key={univ.id}
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: Math.min(idx, 9) * 0.04, duration: 0.32, ease: 'easeOut' }}
               onClick={() => { setSelectedUniv(univ); setActiveDetailTab('overview'); }}
-              className={`p-5 sm:p-6 rounded-3xl border transition-all duration-300 card-3d cursor-pointer flex flex-col justify-between group ${
+              className={`p-5 sm:p-6 rounded-3xl border transition-colors duration-300 card-3d cursor-pointer flex flex-col justify-between group ${
                 theme === 'dark'
                   ? 'bg-[#0B101E] border-slate-800/80 hover:border-blue-500/50 hover:shadow-depth-md'
                   : 'bg-white border-slate-200/90 hover:border-blue-500 shadow-sm hover:shadow-depth-md'
@@ -326,7 +330,7 @@ export default function UniversityHub({ theme, onOpenCopilot, onAddToTracker }) 
                 <span>Explore Affiliated Colleges & Details</span>
                 <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </div>
-            </div>
+            </motion.div>
           )
         })}
       </div>

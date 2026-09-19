@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
 import { 
   CheckCircle2, Clock, Plus, AlertCircle, FileText, 
   ExternalLink, Trash2, Calendar, ShieldCheck, ArrowRight, 
@@ -361,12 +362,15 @@ export default function ApplicationTracker({ theme, onOpenCopilot, prefillData }
           </div>
         ) : (
           <div className="space-y-4">
-            {applications.map((app) => {
+            {applications.map((app, idx) => {
               const currentStep = app.current_step || 1
               return (
-                <div
+                <motion.div
                   key={app.id}
-                  className={`p-6 rounded-3xl border shadow-sm transition-all ${
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: Math.min(idx, 8) * 0.05, duration: 0.3, ease: 'easeOut' }}
+                  className={`p-6 rounded-3xl border shadow-sm card-3d ${
                     theme === 'dark' ? 'bg-[#0E1424] border-slate-800' : 'bg-white border-slate-200'
                   }`}
                 >
@@ -482,7 +486,7 @@ export default function ApplicationTracker({ theme, onOpenCopilot, prefillData }
                       )}
                     </div>
                   </div>
-                </div>
+                </motion.div>
               )
             })}
           </div>
