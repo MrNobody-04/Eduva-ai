@@ -11,9 +11,7 @@ export default function MobileBottomNav({ activeTab, setActiveTab, onOpenCopilot
   ]
 
   return (
-    <nav className={`lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t backdrop-blur-xl px-2 py-1.5 transition-all ${
-      theme === 'dark' ? 'bg-[#080C14]/95 border-slate-800 text-slate-400' : 'bg-white/95 border-slate-200 text-slate-600'
-    }`}>
+    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-[var(--border-subtle)] backdrop-blur-md px-2 py-1.5 transition-all bg-[var(--surface-1)]/95 text-[var(--text-secondary)] shadow-[0_-5px_20px_rgba(15,23,42,.04)]">
       <div className="flex items-center justify-around">
         {tabs.map(tab => {
           const Icon = tab.icon
@@ -27,10 +25,10 @@ export default function MobileBottomNav({ activeTab, setActiveTab, onOpenCopilot
                 className="flex flex-col items-center justify-center -mt-5 cursor-pointer min-w-[50px] min-h-[50px]"
                 aria-label="Ask EDUVA AI"
               >
-                <div className="w-11 h-11 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-600/30 active:scale-95 transition-transform">
+                <div className="w-11 h-11 rounded-full bg-[var(--primary)] text-white flex items-center justify-center shadow-[0_6px_18px_rgba(79,70,229,.25)] active:scale-95 transition-transform">
                   <Bot className="w-5 h-5" />
                 </div>
-                <span className="text-[10px] font-bold text-blue-500 mt-1">Copilot</span>
+                <span className="text-[10px] font-bold text-[var(--primary)] mt-1">Copilot</span>
               </button>
             )
           }
@@ -54,7 +52,7 @@ export default function MobileBottomNav({ activeTab, setActiveTab, onOpenCopilot
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`flex flex-col items-center justify-center py-1.5 px-3 text-[10px] font-bold transition-all cursor-pointer min-h-[44px] min-w-[44px] ${
-                isActive ? 'text-blue-500 font-black' : 'hover:text-slate-200'
+                isActive ? 'text-[var(--primary)] font-black' : 'hover:text-[var(--text-primary)]'
               }`}
               aria-label={tab.label}
             >

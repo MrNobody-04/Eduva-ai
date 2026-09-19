@@ -8,22 +8,22 @@ export default {
     extend: {
       colors: {
         eduva: {
-          canvas: "#060911",
-          surface1: "#0B101E",
-          surface2: "#11182B",
-          surface3: "#18223C",
-          border: "rgba(255, 255, 255, 0.08)",
-          borderLight: "rgba(0, 0, 0, 0.08)",
-          accent: "#2563EB",
-          accentHover: "#1D4ED8",
-          cobalt: "#3B82F6",
-          emerald: "#059669",
-          emeraldGlow: "rgba(16, 185, 129, 0.2)",
+          canvas: "#FBFBFB",
+          surface1: "#E5E1DA",
+          surface2: "#E5E1DA",
+          surface3: "#DBD6CD",
+          border: "#D5D0C7",
+          borderLight: "#D5D0C7",
+          accent: "#4F46E5",
+          accentHover: "#4338CA",
+          cobalt: "#4F46E5",
+          emerald: "#0F766E",
+          emeraldGlow: "rgba(15, 118, 110, 0.12)",
           amber: "#D97706",
           rose: "#DC2626",
-          textPrimary: "#F8FAFC",
-          textSecondary: "#94A3B8",
-          textMuted: "#64748B"
+          textPrimary: "#191B1F",
+          textSecondary: "#5C5852",
+          textMuted: "#7E7A73"
         }
       },
       fontFamily: {
@@ -32,11 +32,11 @@ export default {
         display: ['Plus Jakarta Sans', 'sans-serif']
       },
       boxShadow: {
-        'depth-sm': '0 2px 8px -2px rgba(0, 0, 0, 0.4), 0 1px 3px -1px rgba(0, 0, 0, 0.2)',
-        'depth-md': '0 8px 24px -4px rgba(0, 0, 0, 0.5), 0 4px 12px -2px rgba(0, 0, 0, 0.3)',
-        'depth-lg': '0 16px 40px -8px rgba(0, 0, 0, 0.6), 0 8px 20px -4px rgba(0, 0, 0, 0.4)',
-        'accent-glow': '0 0 25px -5px rgba(37, 99, 235, 0.35)',
-        'emerald-glow': '0 0 25px -5px rgba(16, 185, 129, 0.3)'
+        'depth-sm': '0 3px 12px rgba(15, 23, 42, 0.05)',
+        'depth-md': '0 8px 30px rgba(15, 23, 42, 0.06)',
+        'depth-lg': '0 14px 36px rgba(15, 23, 42, 0.08)',
+        'accent-glow': '0 6px 18px rgba(79, 70, 229, 0.14)',
+        'emerald-glow': '0 6px 18px rgba(15, 118, 110, 0.12)'
       },
       transitionTimingFunction: {
         'editorial': 'cubic-bezier(0.16, 1, 0.3, 1)',

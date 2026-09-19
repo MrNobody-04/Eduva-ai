@@ -1,379 +1,79 @@
-import React, { useState, useEffect } from 'react'
-import { 
-  Sparkles, GraduationCap, Building2, BookOpen, Compass, 
-  ArrowRight, ShieldCheck, CheckCircle2, Search, Bot, 
-  Calendar, Flame, TrendingUp, Award, Layers, Zap
-} from 'lucide-react'
+import React, { useState } from 'react'
+import { ArrowRight, Bot, Building2, Calendar, CheckCircle2, Compass, GraduationCap, MapPin, ShieldCheck, Sparkles } from 'lucide-react'
 
-// Animated Digital Monospace Counter Component
-function AnimatedDigitalNumber({ target, suffix = '', theme }) {
-  const [current, setCurrent] = useState(0)
+const metrics = [
+  ['27+', 'Universities', 'Central, provincial & specialist'],
+  ['1,400+', 'Colleges', 'Across all seven provinces'],
+  ['15+', 'Degree pathways', 'Requirements mapped clearly'],
+  ['Level 1', 'Source standard', 'Official notices first']
+]
 
-  useEffect(() => {
-    const end = parseInt(target.toString().replace(/,/g, ''), 10) || 0
-    let startTime = null
-    const duration = 1500
+const pathways = [
+  { no: '01', title: 'Find your direction', text: 'Match your stream, GPA, location and budget with the programs open to you.', action: 'Explore degrees', tab: 'courses' },
+  { no: '02', title: 'Compare with context', text: 'Read the differences that matter: affiliation, entrance route, fees and verified details.', action: 'Compare universities', tab: 'compare' },
+  { no: '03', title: 'Move with confidence', text: 'Track entrance dates, applications and official changes in one calm workspace.', action: 'Open entrance radar', tab: 'entrance' }
+]
 
-    const animate = (timestamp) => {
-      if (!startTime) startTime = timestamp
-      const elapsed = timestamp - startTime
-      const progress = Math.min(elapsed / duration, 1)
-      // Ease out cubic
-      const eased = 1 - Math.pow(1 - progress, 3)
-      setCurrent(Math.floor(eased * end))
-
-      if (progress < 1) {
-        requestAnimationFrame(animate)
-      } else {
-        setCurrent(end)
-      }
-    }
-
-    const reqId = requestAnimationFrame(animate)
-    return () => cancelAnimationFrame(reqId)
-  }, [target])
-
-  const formatted = current >= 1000 ? current.toLocaleString() : current
+export default function LandingPage({ onOpenCopilot, onNavigateTab }) {
+  const [query, setQuery] = useState('')
+  const submit = (event) => { event.preventDefault(); if (query.trim()) { onOpenCopilot(query.trim()); setQuery('') } }
 
   return (
-    <span className="font-digital tracking-tight inline-flex items-baseline gap-0.5">
-      <span className={theme === 'dark' 
-        ? 'text-3xl sm:text-4xl lg:text-5xl font-black bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-300 bg-clip-text text-transparent digital-glow-blue'
-        : 'text-3xl sm:text-4xl lg:text-5xl font-black bg-gradient-to-r from-blue-700 via-indigo-700 to-cyan-700 bg-clip-text text-transparent digital-glow-blue'
-      }>
-        {formatted}
-      </span>
-      <span className={theme === 'dark' ? 'text-xl sm:text-2xl font-black text-cyan-400' : 'text-xl sm:text-2xl font-black text-blue-600'}>
-        {suffix}
-      </span>
-    </span>
-  )
-}
-
-export default function LandingPage({ onExplore, onOpenCopilot, onNavigateTab, theme }) {
-  const [quickQuery, setQuickQuery] = useState('')
-
-  const handlePromptSubmit = (e) => {
-    e.preventDefault()
-    if (!quickQuery.trim()) return
-    onOpenCopilot(quickQuery.trim())
-    setQuickQuery('')
-  }
-
-  const promptChips = [
-    "Colleges for BSc CSIT in Kathmandu under 8 Lakhs",
-    "TU Pulchowk vs KU Computer Engineering",
-    "TU IOE Entrance 2082 Exam Pattern & Syllabus",
-    "What can I study with 3.2 GPA in Management?",
-    "CEE Medical Entrance eligibility & quota rules"
-  ]
-
-  const metrics = [
-    { label: "Accredited Universities", num: 27, suffix: "+", change: "Central & Provincial" },
-    { label: "Verified Degree Programs", num: 15, suffix: "+", change: "BSc CSIT, BE, CEE, BCA" },
-    { label: "Constituent & Affiliated Colleges", num: 1400, suffix: "+", change: "All 7 Provinces" },
-    { label: "Real-time Verification", num: 100, suffix: "%", change: "Level 1 Authoritative" }
-  ]
-
-  const featurePillars = [
-    {
-      icon: Compass,
-      title: "Context-Aware Autonomous Counselor",
-      description: "Chat with an AI that remembers your GPA, stream, and preferred location. Ask follow-up questions naturally without repeating your budget or interests.",
-      badge: "Gemini 2.5 Flash",
-      badgeColor: "text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/30",
-      action: () => onOpenCopilot(),
-      actionText: "Chat with Counselor",
-      iconColor: "text-blue-500 bg-blue-500/10 border-blue-500/20"
-    },
-    {
-      icon: Calendar,
-      title: "National Entrance Exam Radar",
-      description: "Live countdowns, official syllabi, negative marking notes, and registration links for TU IOE, KU KUCAT, MEC CEE, and CSIT.",
-      badge: "Real-time Updates",
-      badgeColor: "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30",
-      action: () => onNavigateTab('entrance'),
-      actionText: "Explore Entrance Exams",
-      iconColor: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20"
-    },
-    {
-      icon: Award,
-      title: "Loksewa Aayog Radar & Exam Notices",
-      description: "Real-time notices, official vacancies, published merit results, and examination calendars for Federal & Provincial Public Service Commissions.",
-      badge: "PSC Nepal",
-      badgeColor: "text-red-600 dark:text-red-400 bg-red-500/10 border-red-500/30",
-      action: () => onNavigateTab('loksewa'),
-      actionText: "Explore Loksewa Radar",
-      iconColor: "text-red-500 bg-red-500/10 border-red-500/20"
-    },
-    {
-      icon: Flame,
-      title: "Climate & Strike Emergency Alerts",
-      description: "Real-time hazard, flood, and transportation advisories tied directly to university campuses with verified advisory impact notices.",
-      badge: "Safety Radar",
-      badgeColor: "text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/30",
-      action: () => onNavigateTab('alerts'),
-      actionText: "View Live Alerts",
-      iconColor: "text-amber-500 bg-amber-500/10 border-amber-500/20"
-    }
-  ]
-
-  return (
-    <div className="space-y-16 sm:space-y-24 animate-fadeIn pb-16">
-      {/* Hero Section */}
-      <section className="relative pt-6 sm:pt-12 text-center max-w-4xl mx-auto space-y-6">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/25 text-blue-500 text-xs font-bold uppercase tracking-wider">
-          <Sparkles className="w-3.5 h-3.5" />
-          <span>Nepal's Autonomous Higher Education Intelligence</span>
-        </div>
-
-        <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.08] text-balance text-[var(--text-heading)]">
-          The Verified Intelligence Layer for Higher Education in{' '}
-          <span className="text-blue-500">
-            Nepal
-          </span>
-        </h1>
-
-        <p className={`text-base sm:text-lg lg:text-xl max-w-2xl mx-auto leading-relaxed font-normal ${
-          theme === 'dark' ? 'text-slate-300' : 'text-slate-600'
-        }`}>
-          Explore 27+ universities, 1,400+ colleges, verified tuition costs, entrance patterns, and cutoff metrics with zero fabrication.
-        </p>
-
-        {/* Interactive AI Prompt Box */}
-        <div className="pt-4 max-w-2xl mx-auto">
-          <form 
-            onSubmit={handlePromptSubmit}
-            className={`p-2 rounded-2xl border shadow-depth-md flex items-center gap-2 transition-all ${
-              theme === 'dark' 
-                ? 'bg-[#0B101E] border-slate-800 focus-within:border-blue-500' 
-                : 'bg-white border-slate-300 focus-within:border-blue-600'
-            }`}
-          >
-            <div className="pl-3">
-              <Bot className="w-5 h-5 text-blue-500" />
-            </div>
-            <input 
-              type="text"
-              value={quickQuery}
-              onChange={(e) => setQuickQuery(e.target.value)}
-              placeholder="Ask anything: e.g. Best colleges for BSc CSIT in Kathmandu under 7 Lakhs..."
-              className={`flex-1 bg-transparent py-2.5 px-2 text-xs sm:text-sm font-semibold focus:outline-none placeholder:text-slate-400 ${
-                theme === 'dark' ? 'text-white' : 'text-slate-900'
-              }`}
-            />
-            <button
-              type="submit"
-              className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-95 text-white font-bold text-xs sm:text-sm transition-all shadow-md shadow-blue-600/25 flex items-center gap-1.5 cursor-pointer shrink-0"
-            >
-              <span>Ask AI</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </form>
-
-          {/* Quick Prompt Pills with Hover Micro-Interactions */}
-          <div className="flex flex-wrap items-center justify-center gap-2 mt-4">
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Try:</span>
-            {promptChips.map((chip, idx) => (
-              <button
-                key={idx}
-                onClick={() => onOpenCopilot(chip)}
-                className={`text-[11px] px-3.5 py-1.5 rounded-xl border transition-all cursor-pointer font-medium active:scale-95 ${
-                  theme === 'dark'
-                    ? 'bg-[#0B101E] border-slate-800 text-slate-300 hover:border-blue-500 hover:text-white'
-                    : 'bg-slate-100 border-slate-200 text-slate-800 hover:border-blue-500 hover:text-blue-700'
-                }`}
-              >
-                {chip}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Primary Option Action Buttons */}
-        <div className="flex flex-wrap items-center justify-center gap-3.5 pt-6">
-          <button
-            onClick={() => onNavigateTab('universities')}
-            className="px-6 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-95 text-white font-bold text-sm transition-all shadow-md shadow-blue-600/25 flex items-center gap-2 cursor-pointer"
-          >
-            <Building2 className="w-4 h-4" />
-            <span>Explore Universities</span>
-          </button>
-          
-          <button
-            onClick={() => onNavigateTab('entrance')}
-            className={`px-6 py-3.5 rounded-xl border font-bold text-sm transition-all active:scale-95 flex items-center gap-2 cursor-pointer ${
-              theme === 'dark'
-                ? 'bg-[#0B101E] border-slate-800 hover:border-slate-700 text-white'
-                : 'bg-white border-slate-300 hover:border-slate-400 text-slate-900'
-            }`}
-          >
-            <Calendar className="w-4 h-4 text-emerald-500" />
-            <span>Entrance Exam Center</span>
-          </button>
-
-          <button
-            onClick={() => onNavigateTab('compare')}
-            className={`px-6 py-3.5 rounded-xl border font-bold text-sm transition-all active:scale-95 flex items-center gap-2 cursor-pointer ${
-              theme === 'dark'
-                ? 'bg-[#0B101E] border-slate-800 hover:border-slate-700 text-white'
-                : 'bg-white border-slate-300 hover:border-slate-400 text-slate-900'
-            }`}
-          >
-            <Compass className="w-4 h-4 text-blue-400" />
-            <span>Comparison Matrix</span>
-          </button>
-        </div>
-      </section>
-
-      {/* Metrics Bar with Animated Digital Format */}
-      <section className={`grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 p-6 sm:p-8 rounded-3xl border shadow-xl card-3d relative overflow-hidden transition-all ${
-        theme === 'dark' 
-          ? 'bg-[#0E1424]/90 border-slate-800 shadow-cyan-950/20' 
-          : 'bg-white border-slate-200/90 shadow-slate-200'
-      }`}>
-        {metrics.map((m, idx) => (
-          <div key={idx} className="space-y-1.5 text-center md:text-left p-3 rounded-2xl transition-all hover:bg-blue-500/5">
-            <div className="flex items-center justify-center md:justify-start gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
-              <AnimatedDigitalNumber target={m.num} suffix={m.suffix} theme={theme} />
-            </div>
-            <span className="text-xs sm:text-sm font-black block text-slate-900 dark:text-slate-100">{m.label}</span>
-            <span className="text-[11px] text-slate-600 dark:text-slate-400 font-semibold block">{m.change}</span>
-          </div>
-        ))}
-      </section>
-
-      {/* 4 Feature Pillars */}
-      <section className="space-y-6">
-        <div className="text-center max-w-2xl mx-auto space-y-2">
-          <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white">
-            Engineered for Nepal&apos;s Ambitious Students
-          </h2>
-          <p className={`text-xs sm:text-sm font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
-            Built from scratch to eliminate education fraud, inaccurate fees, and outdated entrance notices.
+    <div className="pb-16 animate-fadeIn">
+      <section className="grid lg:grid-cols-[1.1fr_.9fr] gap-10 lg:gap-16 pt-8 sm:pt-16 pb-14 lg:pb-20 items-center">
+        <div className="max-w-3xl">
+          <div className="editorial-label flex items-center gap-2 mb-6"><Sparkles className="w-4 h-4" /> Nepal higher education intelligence</div>
+          <h1 className="text-[2.7rem] sm:text-6xl lg:text-7xl font-extrabold tracking-[-.065em] leading-[.98] text-[var(--text-heading)]">
+            The intelligence layer<br />for higher education<br /><span className="text-[var(--primary)]">in Nepal.</span>
+          </h1>
+          <p className="mt-7 max-w-xl text-base sm:text-lg leading-8 text-[var(--text-secondary)]">
+            Clear, verified information for every university decision—from choosing a degree to preparing for entrance and tracking your next move.
           </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {featurePillars.map((p, idx) => {
-            const Icon = p.icon
-            const pillarNum = `0${idx + 1}`
-            return (
-              <div
-                key={idx}
-                onClick={p.action}
-                className={`p-6 sm:p-8 rounded-3xl border card-3d transition-all duration-300 flex flex-col justify-between group cursor-pointer relative overflow-hidden ${
-                  theme === 'dark'
-                    ? 'bg-[#0B101E] border-slate-800/80 hover:border-blue-500/50 hover:shadow-depth-lg'
-                    : 'bg-white border-slate-200/90 hover:border-blue-500 hover:shadow-depth-lg'
-                }`}
-              >
-                <div className="absolute top-5 right-6 font-mono text-3xl sm:text-4xl font-black text-slate-800/30 dark:text-slate-700/20 select-none pointer-events-none tracking-tighter">
-                  {pillarNum}
-                </div>
-
-                <div className="space-y-4 relative z-10">
-                  <div className="flex items-center justify-between">
-                    <div className={`w-12 h-12 rounded-2xl border flex items-center justify-center group-hover:scale-110 transition-all ${p.iconColor || 'text-blue-500 bg-blue-500/10 border-blue-500/20'}`}>
-                      <Icon className="w-6 h-6" />
-                    </div>
-                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${p.badgeColor || 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'}`}>
-                      {p.badge}
-                    </span>
-                  </div>
-
-                  <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white group-hover:text-blue-500 transition-colors">
-                    {p.title}
-                  </h3>
-                  <p className="text-xs sm:text-sm leading-relaxed text-slate-600 dark:text-slate-300 font-normal">
-                    {p.description}
-                  </p>
-                </div>
-
-                <div className="pt-6 relative z-10">
-                  <button
-                    onClick={(e) => { e.stopPropagation(); p.action(); }}
-                    className="inline-flex items-center gap-2 text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-500 group-hover:translate-x-1 transition-all cursor-pointer"
-                  >
-                    <span>{p.actionText}</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      </section>
-
-      {/* Key National Gateways Strip */}
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-bold uppercase tracking-widest text-blue-500">Fast Access</span>
-            <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">Primary Education Gateways</h3>
+          <form onSubmit={submit} className="editorial-surface mt-9 p-2 rounded-xl flex gap-2 items-center max-w-2xl focus-within:border-[var(--primary)] transition-colors">
+            <Bot className="ml-3 w-5 h-5 text-[var(--primary)] shrink-0" />
+            <input value={query} onChange={(e) => setQuery(e.target.value)} className="min-w-0 flex-1 bg-transparent py-3 px-2 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)]" placeholder="Ask about a course, college, entrance or scholarship" />
+            <button type="submit" className="button-primary rounded-lg px-4 sm:px-5 py-3 text-sm font-bold shrink-0 flex gap-2 items-center"><span className="hidden sm:inline">Ask Eduva</span><ArrowRight className="w-4 h-4" /></button>
+          </form>
+          <div className="flex flex-wrap gap-x-5 gap-y-2 mt-5 text-xs font-semibold text-[var(--text-secondary)]">
+            <button onClick={() => onOpenCopilot('What can I study with 3.2 GPA in Management?')} className="hover:text-[var(--primary)]">What can I study with 3.2 GPA? →</button>
+            <button onClick={() => onOpenCopilot('Compare TU Pulchowk and KU Computer Engineering')} className="hover:text-[var(--primary)]">TU Pulchowk vs KU →</button>
           </div>
-          <button 
-            onClick={() => onNavigateTab('universities')}
-            className="text-xs font-semibold text-blue-500 hover:underline flex items-center gap-1 cursor-pointer"
-          >
-            <span>View All 27+</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
+          <div className="flex flex-wrap gap-3 mt-9">
+            <button onClick={() => onNavigateTab('universities')} className="button-primary rounded-lg px-5 py-3.5 text-sm font-bold flex gap-2 items-center"><Building2 className="w-4 h-4" /> Explore universities</button>
+            <button onClick={() => onNavigateTab('entrance')} className="button-secondary rounded-lg px-5 py-3.5 text-sm font-bold flex gap-2 items-center"><Calendar className="w-4 h-4 text-[var(--verified)]" /> Entrance radar</button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
-          {[
-            { name: "Tribhuvan University", code: "TU Kirtipur", tag: "Central", tab: "universities" },
-            { name: "Kathmandu University", code: "KU Dhulikhel", tag: "Autonomous", tab: "universities" },
-            { name: "IOE Pulchowk", code: "Engineering", tag: "Entrance", tab: "entrance" },
-            { name: "Pokhara University", code: "PU Pokhara", tag: "Regional", tab: "universities" },
-            { name: "Medical Edu Commission", code: "MEC CEE", tag: "National", tab: "entrance" }
-          ].map((gw, idx) => (
-            <div
-              key={idx}
-              onClick={() => onNavigateTab(gw.tab)}
-              className={`p-4 rounded-2xl border transition-all cursor-pointer card-3d group ${
-                theme === 'dark' 
-                  ? 'bg-[#0B101E] border-slate-800/80 hover:border-blue-500/50' 
-                  : 'bg-white border-slate-200/90 hover:border-blue-500'
-              }`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-500 border border-blue-500/20">
-                  {gw.tag}
-                </span>
-                <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-500 group-hover:translate-x-0.5 transition-all" />
-              </div>
-              <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-blue-500 transition-colors line-clamp-1">
-                {gw.name}
-              </h4>
-              <p className="text-[11px] text-slate-500 font-mono mt-0.5">
-                {gw.code}
-              </p>
+        <div className="relative min-h-[390px] sm:min-h-[460px] rounded-2xl overflow-hidden border border-[var(--border-subtle)] bg-[var(--surface-1)] p-6 sm:p-8 shadow-[var(--shadow-editorial)]">
+          <div className="absolute inset-0 opacity-70" style={{ backgroundImage: 'linear-gradient(#E4E7EC 1px, transparent 1px), linear-gradient(90deg, #E4E7EC 1px, transparent 1px)', backgroundSize: '44px 44px' }} />
+          <div className="relative h-full flex flex-col justify-between">
+            <div className="flex justify-between items-start"><div><p className="editorial-label">Education network</p><h2 className="text-xl font-extrabold tracking-tight mt-1">Your next decision,<br />connected.</h2></div><div className="verified-badge rounded-full px-3 py-1.5 text-xs font-bold flex gap-1.5 items-center"><CheckCircle2 className="w-3.5 h-3.5" /> Verified data</div></div>
+            <div className="relative grow my-7">
+              <div className="absolute left-[12%] top-[24%] w-3 h-3 rounded-full bg-[var(--verified)] ring-8 ring-[#E7F5F1]" />
+              <div className="absolute left-[42%] top-[12%] w-4 h-4 rounded-full bg-[var(--primary)] ring-8 ring-indigo-100" />
+              <div className="absolute right-[14%] top-[35%] w-3 h-3 rounded-full bg-[var(--primary)] ring-8 ring-indigo-100" />
+              <div className="absolute left-[34%] bottom-[7%] w-3 h-3 rounded-full bg-[#E76F51] ring-8 ring-orange-100" />
+              <div className="absolute left-[14%] top-[28%] w-[30%] h-px bg-indigo-300 rotate-[-18deg] origin-left" /><div className="absolute left-[45%] top-[16%] w-[38%] h-px bg-indigo-300 rotate-[19deg] origin-left" /><div className="absolute left-[38%] top-[17%] h-[58%] w-px bg-indigo-200 rotate-[19deg] origin-top" />
+              <div className="absolute left-0 bottom-0 editorial-surface rounded-xl p-4 w-48"><div className="flex items-center gap-2 text-[var(--verified)] text-xs font-bold"><ShieldCheck className="w-4 h-4" /> Official source</div><p className="text-sm font-bold mt-2">TU entrance update</p><p className="text-xs text-[var(--text-secondary)] mt-1">Checked against notice board</p></div>
+              <div className="absolute right-0 top-[56%] editorial-surface rounded-xl p-4 w-48"><p className="text-xs font-bold text-[var(--primary)]">PATHWAY MATCH</p><p className="text-sm font-bold mt-2">BSc CSIT</p><p className="text-xs text-[var(--text-secondary)] mt-1">14 matching colleges</p></div>
             </div>
-          ))}
+            <div className="grid grid-cols-3 border-t border-[var(--border-subtle)] pt-4 text-xs"><div><p className="text-[var(--text-muted)]">Universities</p><p className="text-lg font-extrabold">27</p></div><div><p className="text-[var(--text-muted)]">Sources</p><p className="text-lg font-extrabold">Level 1</p></div><div><p className="text-[var(--text-muted)]">Coverage</p><p className="text-lg font-extrabold">7 provinces</p></div></div>
+          </div>
         </div>
       </section>
 
-      {/* Verification Policy Banner */}
-      <section className={`p-8 rounded-3xl border text-center space-y-4 card-3d ${
-        theme === 'dark'
-          ? 'bg-gradient-to-r from-blue-950/30 via-indigo-950/40 to-purple-950/30 border-blue-500/30'
-          : 'bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 border-blue-200 shadow-sm'
-      }`}>
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-black uppercase tracking-wide">
-          <ShieldCheck className="w-4 h-4" />
-          <span>Strict Anti-Hallucination Policy</span>
-        </div>
-        <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
-          Only Official Registries. Zero Commercial Bias.
-        </h3>
-        <p className={`text-xs sm:text-sm max-w-2xl mx-auto font-medium ${
-          theme === 'dark' ? 'text-slate-300' : 'text-slate-700'
-        }`}>
-          Every degree requirement, entrance deadline, and fee estimation is tied directly to published notices from Tribhuvan University, Kathmandu University, Pokhara University, and the Ministry of Education.
-        </p>
+      <section className="border-y border-[var(--border-subtle)] grid grid-cols-2 lg:grid-cols-4 divide-x divide-y lg:divide-y-0 divide-[var(--border-subtle)] bg-[var(--surface-1)]">
+        {metrics.map(([number, label, detail]) => <div key={label} className="p-5 sm:p-7"><div className="text-2xl sm:text-3xl font-extrabold tracking-[-.06em] text-[var(--text-heading)]">{number}</div><div className="text-sm font-bold mt-1">{label}</div><div className="text-xs mt-1.5 text-[var(--text-secondary)]">{detail}</div></div>)}
+      </section>
+
+      <section className="py-16 sm:py-24 grid lg:grid-cols-[.72fr_1.28fr] gap-10 lg:gap-16">
+        <div><p className="editorial-label">A calmer way forward</p><h2 className="text-3xl sm:text-4xl font-extrabold tracking-[-.05em] leading-tight mt-3">Every choice deserves better information.</h2><p className="mt-5 text-[var(--text-secondary)] leading-7">Eduva turns scattered notices, eligibility rules, and institutional details into a practical decision system built around you.</p></div>
+        <div className="border-t border-[var(--border-subtle)]">{pathways.map((item) => <button key={item.no} onClick={() => onNavigateTab(item.tab)} className="group grid grid-cols-[44px_1fr_auto] text-left gap-4 sm:gap-6 w-full py-6 border-b border-[var(--border-subtle)] hover:bg-[var(--surface-1)] px-2 transition-colors"><span className="text-sm font-bold text-[var(--primary)]">{item.no}</span><span><span className="block font-bold text-lg">{item.title}</span><span className="block text-sm leading-6 text-[var(--text-secondary)] mt-1">{item.text}</span></span><ArrowRight className="w-5 h-5 mt-1 text-[var(--text-muted)] group-hover:text-[var(--primary)] group-hover:translate-x-1 transition-all" /></button>)}</div>
+      </section>
+
+      <section className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-1)] overflow-hidden grid md:grid-cols-[1fr_.85fr]">
+        <div className="p-8 sm:p-12"><div className="verified-badge inline-flex gap-2 items-center rounded-full px-3 py-1.5 text-xs font-bold"><ShieldCheck className="w-4 h-4" /> Verification is a feature</div><h2 className="text-3xl font-extrabold tracking-[-.05em] mt-5">Only official sources. No commercial bias.</h2><p className="mt-4 max-w-xl text-[var(--text-secondary)] leading-7">Every important claim is designed to carry its source and confidence—so you can understand what is confirmed, what changed, and what still needs checking.</p><button onClick={() => onNavigateTab('briefing')} className="mt-7 text-sm font-bold text-[var(--primary)] flex gap-2 items-center">View your education briefing <ArrowRight className="w-4 h-4" /></button></div>
+        <div className="bg-[var(--surface-2)] p-8 sm:p-12 flex flex-col justify-center gap-5"><div className="flex gap-3 items-center"><span className="w-2.5 h-2.5 rounded-full bg-[var(--verified)]" /><span className="text-sm font-bold">Verified university data</span></div><div className="flex gap-3 items-center"><MapPin className="w-4 h-4 text-[var(--primary)]" /><span className="text-sm text-[var(--text-secondary)]">National and provincial coverage</span></div><div className="flex gap-3 items-center"><GraduationCap className="w-4 h-4 text-[var(--primary)]" /><span className="text-sm text-[var(--text-secondary)]">Entrance, programs and applications</span></div></div>
       </section>
     </div>
   )

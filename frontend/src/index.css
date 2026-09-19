@@ -4,214 +4,103 @@
 
 @layer base {
   :root {
-    --bg-main: #060911;
-    --surface-1: #0B101E;
-    --surface-2: #11182B;
-    --surface-3: #18223C;
-    --card-bg: #0B101E;
-    --input-bg: #11182B;
-    --border-subtle: rgba(255, 255, 255, 0.08);
-    --border-highlight: rgba(59, 130, 246, 0.4);
-    --primary: #2563EB;
-    --primary-glow: rgba(37, 99, 235, 0.2);
-    --text-primary: #F8FAFC;
-    --text-secondary: #94A3B8;
-    --text-muted: #64748B;
-    --text-heading: #FFFFFF;
+    --bg-main: #FBFBFB; --surface-1: #E5E1DA; --surface-2: #E5E1DA; --surface-3: #DBD6CD;
+    --card-bg: #E5E1DA; --input-bg: #FBFBFB; --border-subtle: #D5D0C7; --border-highlight: #4F46E5;
+    --primary: #4F46E5; --primary-hover: #4338CA; --primary-glow: rgba(79,70,229,.10);
+    --ink: #191B1F; --text-primary: #191B1F; --text-secondary: #5C5852; --text-muted: #7E7A73; --text-heading: #191B1F;
+    --verified: #0F766E; --verified-soft: rgba(15,118,110,.12); --shadow-editorial: 0 8px 30px rgba(25,27,31,.06);
   }
-
-  .theme-light {
-    --bg-main: #F8FAFC;
-    --surface-1: #FFFFFF;
-    --surface-2: #F1F5F9;
-    --surface-3: #E2E8F0;
-    --card-bg: #FFFFFF;
-    --input-bg: #F8FAFC;
-    --border-subtle: rgba(0, 0, 0, 0.08);
-    --border-highlight: rgba(37, 99, 235, 0.4);
-    --primary: #2563EB;
-    --primary-glow: rgba(37, 99, 235, 0.12);
-    --text-primary: #0F172A;
-    --text-secondary: #334155;
-    --text-muted: #64748B;
-    --text-heading: #090D16;
+  .theme-dark {
+    --bg-main: #222831; --surface-1: #2A313C; --surface-2: #333B47; --surface-3: #3D4654;
+    --card-bg: #2A313C; --input-bg: #333B47; --border-subtle: #3D4654; --border-highlight: #818CF8;
+    --primary: #818CF8; --primary-hover: #A5B4FC; --primary-glow: rgba(129,140,248,.15);
+    --ink: #EEEEEE; --text-primary: #EEEEEE; --text-secondary: #B0B7C3; --text-muted: #8892A0; --text-heading: #EEEEEE;
+    --verified: #2DD4BF; --verified-soft: rgba(45,212,191,.12); --shadow-editorial: 0 10px 35px rgba(0,0,0,.25);
   }
 }
 
-body {
-  background-color: var(--bg-main);
-  color: var(--text-primary);
-  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  transition: background-color 0.25s ease, color 0.25s ease;
-  overflow-x: hidden;
-}
+* { border-color: var(--border-subtle); }
+body { background: var(--bg-main); color: var(--text-primary); font-family: 'Plus Jakarta Sans', Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+button, input, textarea, select { font: inherit; }
+::selection { background: #C7D2FE; color: #111827; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: #C9CDD6; border-radius: 8px; }
+.theme-dark ::-webkit-scrollbar-thumb { background: #3A404C; }
 
-/* Custom modern sleek scrollbars */
-::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.25);
-  border-radius: 9999px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.45);
-}
+.eduva-shell { background: var(--bg-main); color: var(--text-primary); min-height: 100vh; }
+.editorial-surface { background: var(--surface-1); border: 1px solid var(--border-subtle); box-shadow: var(--shadow-editorial); }
+.editorial-label { color: var(--primary); font-size: .72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.verified-badge { color: var(--verified); background: var(--verified-soft); border: 1px solid color-mix(in srgb, var(--verified) 26%, transparent); }
+.button-primary { background: var(--primary); color: white; box-shadow: 0 5px 15px rgba(79,70,229,.18); }
+.button-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
+.button-secondary { background: var(--surface-1); border: 1px solid var(--border-subtle); color: var(--text-primary); }
+.button-secondary:hover { border-color: var(--primary); color: var(--primary); }
+.card-premium, .card-3d { border: 1px solid var(--border-subtle); transition: transform .22s ease, border-color .22s ease, box-shadow .22s ease; }
+.card-premium:hover, .card-3d:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--primary) 55%, var(--border-subtle)); box-shadow: var(--shadow-editorial); }
+.glass-panel, .glass-panel-light { background: var(--surface-1); border: 1px solid var(--border-subtle); backdrop-filter: none; }
+.text-gradient-brand { background: none; -webkit-text-fill-color: initial; color: var(--primary); }
+.text-gradient-emerald { background: none; -webkit-text-fill-color: initial; color: var(--verified); }
+.font-digital { font-family: 'Plus Jakarta Sans', Inter, sans-serif; font-feature-settings: 'tnum'; letter-spacing: -.055em; }
+.digital-glow-blue { text-shadow: none; }
+.btn-interactive { transition: transform .2s ease, border-color .2s ease; }
+.btn-interactive:hover { transform: translateY(-1px); }
+:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+@keyframes editorialReveal { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+.animate-fadeIn, .animate-slide-up, .animate-slide-drawer { animation: editorialReveal .45s cubic-bezier(.16,1,.3,1) both; }
+@media (prefers-reduced-motion: reduce) { *, ::before, ::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
 
-/* 3D / 4D Perspective & Fluid Animations */
-@keyframes floatSlow {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(-8px) rotate(0.5deg); }
-}
+/* App-wide editorial system: shared by every route, directory, dashboard and modal. */
+.app-view > * { animation: editorialReveal .42s cubic-bezier(.16,1,.3,1) both; }
+.app-view :is(h1, h2, h3) { color: var(--text-heading); letter-spacing: -.035em; }
+.app-view input, .app-view select, .app-view textarea { background: var(--input-bg) !important; border-color: var(--border-subtle) !important; color: var(--text-primary) !important; box-shadow: none !important; }
+.app-view input:focus, .app-view select:focus, .app-view textarea:focus { border-color: var(--primary) !important; box-shadow: 0 0 0 3px var(--primary-glow) !important; }
 
-@keyframes pulseSubtle {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.8; transform: scale(1.02); }
-}
+/* Existing functional content adopts physical editorial panels instead of dashboard cards. */
+.app-view [class*="rounded-3xl"][class*="border"],
+.app-view [class*="rounded-2xl"][class*="border"] { border-radius: 14px; }
+.theme-light .app-view [class*="bg-white"][class*="border"],
+.theme-light .app-view [class*="bg-slate-100"][class*="border"] { box-shadow: 0 5px 18px rgba(15,23,42,.035); }
+.app-view [class*="shadow-xl"], .app-view [class*="shadow-2xl"], .app-view [class*="shadow-depth"] { box-shadow: var(--shadow-editorial) !important; }
 
-@keyframes slideDrawerIn {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0%);
-    opacity: 1;
-  }
-}
+/* Elevation is reserved for actionable content; table/list data stays calm and readable. */
+.app-view button[class*="border"], .app-view a[class*="border"] { transition: transform .2s ease, border-color .2s ease, background-color .2s ease, color .2s ease, box-shadow .2s ease; }
+.app-view button[class*="border"]:hover, .app-view a[class*="border"]:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--primary) 55%, var(--border-subtle)); }
+.app-view [role="row"], .app-view tr { transition: background-color .18s ease; }
+.app-view tr:hover { background: color-mix(in srgb, var(--primary) 4%, transparent); }
 
-@keyframes slideUpFade {
-  from {
-    transform: translateY(20px) scale(0.98);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0px) scale(1);
-    opacity: 1;
-  }
-}
+/* Semantic status language—teal confirms, amber asks attention, coral signals urgency. */
+.theme-light .app-view .text-emerald-400, .theme-light .app-view .text-emerald-500, .theme-light .app-view .text-emerald-600 { color: var(--verified) !important; }
+.theme-light .app-view .bg-emerald-500\/10, .theme-light .app-view .bg-emerald-500\/20 { background-color: var(--verified-soft) !important; }
+.theme-light .app-view .text-blue-500, .theme-light .app-view .text-blue-600, .theme-light .app-view .text-blue-700 { color: var(--primary) !important; }
+.theme-light .app-view .bg-blue-600 { background-color: var(--primary) !important; }
+.theme-light .app-view .hover\:bg-blue-500:hover { background-color: var(--primary-hover) !important; }
 
-.animate-float-slow {
-  animation: floatSlow 6s ease-in-out infinite;
-}
+/* Navigation and mobile utilities inherit the same calm, elevated language. */
+.theme-light .fixed.bottom-20, .theme-light .fixed.bottom-24 { box-shadow: var(--shadow-editorial); }
+.theme-light .app-view [class*="bg-gradient"] { background-image: none !important; }
 
-.animate-pulse-subtle {
-  animation: pulseSubtle 3s ease-in-out infinite;
-}
+/* The application is organised as a set of calm, consistent workspaces. */
+.workspace-intro { display: flex; gap: 1.25rem; align-items: flex-start; padding: 0 0 1.75rem; margin-bottom: 1.75rem; border-bottom: 1px solid var(--border-subtle); animation: editorialReveal .35s cubic-bezier(.16,1,.3,1) both; }
+.workspace-intro > p { flex: 0 0 auto; margin-top: .38rem; color: var(--primary); font-size: .68rem; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; writing-mode: vertical-rl; transform: rotate(180deg); }
+.workspace-intro h1 { font-size: clamp(1.75rem, 3vw, 2.55rem); line-height: 1.05; font-weight: 800; letter-spacing: -.055em; margin: 0; color: var(--text-heading); }
+.workspace-intro span { display: block; max-width: 42rem; margin-top: .55rem; color: var(--text-secondary); font-size: .92rem; line-height: 1.6; }
 
-.animate-slide-drawer {
-  animation: slideDrawerIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
+/* Dense legacy dashboard blocks become intentional editorial groupings across all pages. */
+.app-view > :not(.workspace-intro) > [class*="grid"] > [class*="rounded"],
+.app-view > :not(.workspace-intro) [class*="card-3d"] { background-color: var(--surface-1); }
+.theme-light .app-view .bg-slate-50 { background-color: var(--surface-2) !important; }
+.theme-light .app-view .bg-slate-100 { background-color: #F5F5F6 !important; }
+.theme-light .app-view .border-slate-200, .theme-light .app-view .border-slate-300 { border-color: var(--border-subtle) !important; }
+.theme-light .app-view .text-slate-900 { color: var(--text-heading) !important; }
+.theme-light .app-view .text-slate-600, .theme-light .app-view .text-slate-700 { color: var(--text-secondary) !important; }
+.theme-light .app-view .text-slate-400, .theme-light .app-view .text-slate-500 { color: var(--text-muted) !important; }
 
-.animate-slide-up {
-  animation: slideUpFade 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
+/* Modals become focused research sheets rather than dark dashboard overlays. */
+.theme-light .fixed.inset-0.z-50 { background-color: rgba(17,24,39,.24) !important; backdrop-filter: blur(4px); }
+.theme-light .fixed.inset-0.z-50 > [class*="rounded"] { border-radius: 16px !important; box-shadow: 0 20px 60px rgba(15,23,42,.16) !important; }
 
-/* 3D Depth Card Elevation */
-.card-3d {
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  transform-style: preserve-3d;
-  perspective: 1000px;
-}
-
-.card-3d:hover {
-  transform: translateY(-4px) scale(1.01) rotateX(1deg);
-  box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.4), 0 0 20px 2px rgba(59, 130, 246, 0.15);
-}
-
-.theme-light .card-3d:hover {
-  box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.1), 0 0 20px 2px rgba(59, 130, 246, 0.12);
-}
-
-/* Prevent mobile auto-zoom on input focus on iOS/Android */
-@media screen and (max-width: 640px) {
-  input, select, textarea {
-    font-size: 16px !important;
-  }
-}
-
-/* Glass Panels */
-.glass-panel {
-  background: rgba(14, 20, 36, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.glass-panel-light {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-}
-
-/* Card Hover Elevation */
-.card-premium {
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  border: 1px solid var(--border-subtle);
-}
-.card-premium:hover {
-  transform: translateY(-3px);
-  border-color: var(--border-highlight);
-  box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.35);
-}
-
-/* Gradient text accents */
-.text-gradient-brand {
-  background: linear-gradient(135deg, #60A5FA 0%, #818CF8 50%, #C084FC 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.text-gradient-emerald {
-  background: linear-gradient(135deg, #34D399 0%, #10B981 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-/* Digital Tabular Counter Formatting */
-.font-digital {
-  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-feature-settings: 'tnum' on, 'zero' on;
-  letter-spacing: -0.04em;
-}
-
-.digital-glow-blue {
-  text-shadow: 0 0 16px rgba(59, 130, 246, 0.45);
-}
-.theme-light .digital-glow-blue {
-  text-shadow: 0 0 12px rgba(37, 99, 235, 0.25);
-}
-
-/* Interactive Option Buttons Hover Scaling */
-.btn-interactive {
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.btn-interactive:hover {
-  transform: translateY(-2px) scale(1.03);
-}
-.btn-interactive:active {
-  transform: translateY(0px) scale(0.97);
-}
-
-/* Accessibility: Visible Focus Indicators (WCAG 2.2 2.4.7) */
-:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
-}
-
-/* Accessibility: Reduced Motion Support (WCAG 2.2 2.3.3) */
-@media (prefers-reduced-motion: reduce) {
-  *, ::before, ::after {
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
-    scroll-behavior: auto !important;
-  }
+@media (max-width: 640px) {
+  .workspace-intro { gap: .8rem; padding-bottom: 1.25rem; margin-bottom: 1.25rem; }
+  .workspace-intro h1 { font-size: 1.65rem; }
+  .workspace-intro span { font-size: .82rem; }
 }

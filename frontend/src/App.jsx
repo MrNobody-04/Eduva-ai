@@ -14,15 +14,34 @@ import ClimateDisasterHub from './components/ClimateDisasterHub'
 import ComparisonView from './components/ComparisonView'
 import EntranceResultsViewer from './components/EntranceResultsViewer'
 import ScholarshipsPortal from './components/ScholarshipsPortal'
+import KnowledgeGraphView from './components/KnowledgeGraphView'
 import ConversationalCopilot from './components/ConversationalCopilot'
 import ProfileModal from './components/ProfileModal'
 import MobileBottomNav from './components/MobileBottomNav'
 import AdminConsole from './components/AdminConsole'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Bot, Heart, Search, X, BookOpen, Building2, GraduationCap, ArrowRight, Bell, AlertTriangle, Lock, ShieldAlert } from 'lucide-react'
+
+const PAGE_CONTEXT = {
+  briefing: { eyebrow: 'Personal workspace', title: 'Your education briefing', detail: 'Priorities, verified notices and the next actions for your academic journey.' },
+  universities: { eyebrow: 'National directory', title: 'Discover institutions', detail: 'Explore verified university and affiliated-college information across Nepal.' },
+  colleges: { eyebrow: 'College directory', title: 'Find the right campus', detail: 'Search colleges by affiliation, location and academic pathway.' },
+  courses: { eyebrow: 'Degree intelligence', title: 'Plan your pathway', detail: 'Understand eligibility, entrance requirements and program options.' },
+  compare: { eyebrow: 'Comparison studio', title: 'See the differences clearly', detail: 'Compare institutions with a neutral, source-led matrix.' },
+  graph: { eyebrow: 'Living ontology', title: '3D Knowledge Graph', detail: 'Explore the interconnected multi-dimensional network of universities, degrees, and entrance systems.' },
+  entrance: { eyebrow: 'Entrance radar', title: 'Dates, notices and preparation', detail: 'Keep official entrance information and key deadlines in one place.' },
+  results: { eyebrow: 'Merit intelligence', title: 'Entrance results', detail: 'Review published results and score information with context.' },
+  scholarships: { eyebrow: 'Funding opportunities', title: 'Scholarships', detail: 'Track verified financial-support opportunities and eligibility.' },
+  loksewa: { eyebrow: 'Public service radar', title: 'Loksewa notices', detail: 'Follow opportunities, examinations and official notices.' },
+  applications: { eyebrow: 'Application workspace', title: 'Keep your applications moving', detail: 'Bring deadlines, documents and submission steps together.' },
+  saved: { eyebrow: 'Research library', title: 'Saved for later', detail: 'Return to the institutions and opportunities that matter to you.' },
+  alerts: { eyebrow: 'Safety desk', title: 'Campus and travel alerts', detail: 'Stay aware of verified conditions that affect academic life.' },
+  admin: { eyebrow: 'Operations workspace', title: 'Platform intelligence', detail: 'Review data quality, agent activity and administrative controls.' }
+}
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('landing')
-  const [theme, setTheme] = useState(() => localStorage.getItem('eduva_theme') || 'dark')
+  const [theme, setTheme] = useState(() => localStorage.getItem('eduva_theme') || 'light')
   const [isDemoMode, setIsDemoMode] = useState(() => localStorage.getItem('eduva_demo_mode') === 'true')
   const [isCopilotOpen, setIsCopilotOpen] = useState(false)
   const [copilotInitialQuery, setCopilotInitialQuery] = useState('')
@@ -248,9 +267,7 @@ export default function App() {
   }
 
   return (
-    <div className={`min-h-screen flex flex-col font-['Plus_Jakarta_Sans',sans-serif] transition-colors duration-300 w-full max-w-full overflow-x-hidden ${
-      theme === 'dark' ? 'bg-[#080C14] text-slate-100 theme-dark' : 'bg-slate-50 text-slate-900 theme-light'
-    }`}>
+    <div className={`eduva-shell min-h-screen flex flex-col font-['Plus_Jakarta_Sans',sans-serif] transition-colors duration-300 w-full max-w-full overflow-x-hidden ${theme === 'dark' ? 'theme-dark' : 'theme-light'}`}>
       
       {/* Header Navbar */}
       <Navbar
@@ -264,149 +281,175 @@ export default function App() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 pb-20 lg:pb-10">
-        
-        {activeTab === 'landing' && (
-          <LandingPage
-            onExplore={() => setActiveTab('universities')}
-            onOpenCopilot={openCopilotWithPrompt}
-            onNavigateTab={(tab) => setActiveTab(tab)}
-            theme={theme}
-          />
-        )}
-
-        {activeTab === 'briefing' && (
-          <DailyBriefing
-            data={dailyBriefing}
-            theme={theme}
-            onOpenCopilot={() => setIsCopilotOpen(true)}
-            onNavigateTab={(tab) => setActiveTab(tab)}
-            onAddToTracker={handleAddToTracker}
-            isDemoMode={isDemoMode}
-          />
-        )}
-
-        {activeTab === 'courses' && (
-          <CourseIntelligence
-            theme={theme}
-          />
-        )}
-
-        {activeTab === 'universities' && (
-          <UniversityHub
-            theme={theme}
-            onOpenCopilot={openCopilotWithPrompt}
-            onAddToTracker={handleAddToTracker}
-          />
-        )}
-
-        {activeTab === 'colleges' && (
-          <CollegesDirectory
-            colleges={colleges}
-            theme={theme}
-            onOpenCopilot={openCopilotWithPrompt}
-            onAddToTracker={handleAddToTracker}
-          />
-        )}
-
-        {activeTab === 'compare' && (
-          <ComparisonView
-            theme={theme}
-            onOpenCopilot={openCopilotWithPrompt}
-          />
-        )}
-
-        {activeTab === 'climate' && (
-          <ClimateDisasterHub
-            theme={theme}
-          />
-        )}
-
-        {activeTab === 'entrance' && (
-          <EntranceCenter
-            theme={theme}
-            onOpenCopilot={openCopilotWithPrompt}
-          />
-        )}
-
-        {activeTab === 'loksewa' && (
-          <LoksewaRadar
-            theme={theme}
-            onOpenCopilot={openCopilotWithPrompt}
-          />
-        )}
-
-        {activeTab === 'alerts' && (
-          <AlertsAndSafety
-            theme={theme}
-            onOpenCopilot={openCopilotWithPrompt}
-          />
-        )}
-
-        {activeTab === 'applications' && (
-          <ApplicationTracker
-            theme={theme}
-            onOpenCopilot={openCopilotWithPrompt}
-            prefillData={trackerPrefill}
-          />
-        )}
-
-        {activeTab === 'saved' && (
-          <SavedHub
-            theme={theme}
-            onNavigateTab={(tab) => setActiveTab(tab)}
-          />
-        )}
-
-        {activeTab === 'results' && (
-          <EntranceResultsViewer
-            results={entranceResults}
-            theme={theme}
-          />
-        )}
-
-        {activeTab === 'scholarships' && (
-          <ScholarshipsPortal
-            theme={theme}
-            onOpenCopilot={openCopilotWithPrompt}
-          />
-        )}
-
-        {activeTab === 'admin' && (
-          userRole === 'admin' ? (
-            <AdminConsole
-              theme={theme}
-              isDemoMode={isDemoMode}
-              toggleDemoMode={toggleDemoMode}
-            />
-          ) : (
-            <div className={`p-8 sm:p-12 rounded-3xl border shadow-xl text-center max-w-xl mx-auto space-y-4 my-10 ${
-              theme === 'dark' ? 'bg-[#0E1424] border-red-900/40 text-white' : 'bg-white border-red-200 text-slate-900'
-            }`}>
-              <div className="w-14 h-14 rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center mx-auto">
-                <Lock className="w-7 h-7" />
-              </div>
-              <h2 className="text-xl sm:text-2xl font-black">Restricted Administrator Area</h2>
-              <p className="text-xs sm:text-sm text-slate-400">
-                The Admin Console is strictly reserved for authenticated system administrators. Please log in with an administrator account or provide an authorized API key.
-              </p>
-              <div className="pt-2 flex justify-center gap-3">
-                <button
-                  onClick={() => setActiveTab('landing')}
-                  className="px-5 py-2.5 rounded-xl border border-slate-700 text-xs font-bold hover:bg-slate-800 transition-all cursor-pointer"
-                >
-                  Return Home
-                </button>
-                <button
-                  onClick={() => setIsProfileOpen(true)}
-                  className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all cursor-pointer"
-                >
-                  Sign In as Administrator
-                </button>
-              </div>
+      <main className="app-view flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 pb-20 lg:pb-10" data-page={activeTab}>
+        {activeTab !== 'landing' && PAGE_CONTEXT[activeTab] && (
+          <section className="workspace-intro">
+            <p>{PAGE_CONTEXT[activeTab].eyebrow}</p>
+            <div>
+              <h1>{PAGE_CONTEXT[activeTab].title}</h1>
+              <span>{PAGE_CONTEXT[activeTab].detail}</span>
             </div>
-          )
+          </section>
         )}
+        
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.22, ease: "easeOut" }}
+            className="w-full"
+          >
+            {activeTab === 'landing' && (
+              <LandingPage
+                onExplore={() => setActiveTab('universities')}
+                onOpenCopilot={openCopilotWithPrompt}
+                onNavigateTab={(tab) => setActiveTab(tab)}
+                theme={theme}
+              />
+            )}
+
+            {activeTab === 'briefing' && (
+              <DailyBriefing
+                data={dailyBriefing}
+                theme={theme}
+                onOpenCopilot={() => setIsCopilotOpen(true)}
+                onNavigateTab={(tab) => setActiveTab(tab)}
+                onAddToTracker={handleAddToTracker}
+                isDemoMode={isDemoMode}
+              />
+            )}
+
+            {activeTab === 'courses' && (
+              <CourseIntelligence
+                theme={theme}
+              />
+            )}
+
+            {activeTab === 'universities' && (
+              <UniversityHub
+                theme={theme}
+                onOpenCopilot={openCopilotWithPrompt}
+                onAddToTracker={handleAddToTracker}
+              />
+            )}
+
+            {activeTab === 'colleges' && (
+              <CollegesDirectory
+                colleges={colleges}
+                theme={theme}
+                onOpenCopilot={openCopilotWithPrompt}
+                onAddToTracker={handleAddToTracker}
+              />
+            )}
+
+            {activeTab === 'compare' && (
+              <ComparisonView
+                theme={theme}
+                onOpenCopilot={openCopilotWithPrompt}
+              />
+            )}
+
+            {activeTab === 'graph' && (
+              <KnowledgeGraphView
+                theme={theme}
+              />
+            )}
+
+            {activeTab === 'climate' && (
+              <ClimateDisasterHub
+                theme={theme}
+              />
+            )}
+
+            {activeTab === 'entrance' && (
+              <EntranceCenter
+                theme={theme}
+                onOpenCopilot={openCopilotWithPrompt}
+              />
+            )}
+
+            {activeTab === 'loksewa' && (
+              <LoksewaRadar
+                theme={theme}
+                onOpenCopilot={openCopilotWithPrompt}
+              />
+            )}
+
+            {activeTab === 'applications' && (
+              <ApplicationTracker
+                prefillItem={trackerPrefill}
+                theme={theme}
+                onOpenCopilot={openCopilotWithPrompt}
+              />
+            )}
+
+            {activeTab === 'alerts' && (
+              <AlertsAndSafety
+                theme={theme}
+                onNavigateTab={(tab) => setActiveTab(tab)}
+              />
+            )}
+
+            {activeTab === 'saved' && (
+              <SavedHub
+                theme={theme}
+                onNavigateTab={(tab) => setActiveTab(tab)}
+              />
+            )}
+
+            {activeTab === 'results' && (
+              <EntranceResultsViewer
+                results={entranceResults}
+                theme={theme}
+              />
+            )}
+
+            {activeTab === 'scholarships' && (
+              <ScholarshipsPortal
+                theme={theme}
+                onOpenCopilot={openCopilotWithPrompt}
+              />
+            )}
+
+            {activeTab === 'admin' && (
+              userRole === 'admin' ? (
+                <AdminConsole
+                  theme={theme}
+                  isDemoMode={isDemoMode}
+                  toggleDemoMode={toggleDemoMode}
+                />
+              ) : (
+                <div className={`p-8 sm:p-12 rounded-3xl border shadow-xl text-center max-w-xl mx-auto space-y-4 my-10 ${
+                  theme === 'dark' ? 'bg-[#0E1424] border-red-900/40 text-white' : 'bg-white border-red-200 text-slate-900'
+                }`}>
+                  <div className="w-14 h-14 rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center mx-auto">
+                    <Lock className="w-7 h-7" />
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-black">Restricted Administrator Area</h2>
+                  <p className="text-xs sm:text-sm text-slate-400">
+                    The Admin Console is strictly reserved for authenticated system administrators. Please log in with an administrator account or provide an authorized API key.
+                  </p>
+                  <div className="pt-2 flex justify-center gap-3">
+                    <button
+                      onClick={() => setActiveTab('landing')}
+                      className="px-5 py-2.5 rounded-xl border border-slate-700 text-xs font-bold hover:bg-slate-800 transition-all cursor-pointer"
+                    >
+                      Return Home
+                    </button>
+                    <button
+                      onClick={() => setIsProfileOpen(true)}
+                      className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all cursor-pointer"
+                    >
+                      Sign In as Administrator
+                    </button>
+                  </div>
+                </div>
+              )
+            )}
+          </motion.div>
+        </AnimatePresence>
 
       </main>
 
@@ -653,9 +696,7 @@ export default function App() {
       />
 
       {/* Clean Modern Footer */}
-      <footer className={`border-t py-8 transition-colors w-full ${
-        theme === 'dark' ? 'border-slate-800/80 bg-[#060911] text-slate-400' : 'border-slate-200 bg-white text-slate-600'
-      }`}>
+      <footer className="border-t border-[var(--border-subtle)] py-8 transition-colors w-full bg-[var(--surface-1)] text-[var(--text-secondary)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
           <div className="flex items-center space-x-2.5">
             <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 p-0.5 flex items-center justify-center">

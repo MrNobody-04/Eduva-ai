@@ -17,10 +17,16 @@ class ResearchAgent:
         self.active_university_index = 0
         self.universities_catalog_checklist = [
             "Tribhuvan University", "Kathmandu University", "Pokhara University",
-            "Purbanchal University", "Nepal Sanskrit University", "Lumbini Bauddha University",
-            "Agriculture and Forestry University", "Mid-Western University", "Far-Western University",
-            "Nepal Open University", "Rajarshi Janak University", "Manmohan Technical University",
-            "Madan Bhandari University of Science and Technology", "Gandaki University"
+            "Purbanchal University", "Mid-West University", "Sudurpaschim University",
+            "University of Nepal", "Agriculture and Forestry University", "Nepal Sanskrit University",
+            "Lumbini Buddhist University", "Nepal Open University", "Rajarshi Janak University",
+            "Madan Bhandari University of Science and Technology", "Yogamaya Ayurveda University",
+            "Manmohan Technical University", "Gandaki University", "Madhesh Agricultural University",
+            "Madhesh University", "Lumbini Technological University", "BPKIHS",
+            "NAMS (Bir Hospital)", "Patan Academy of Health Sciences (PAHS)",
+            "Karnali Academy of Health Sciences (KAHS)", "Rapti Academy of Health Sciences (RAHS)",
+            "Pokhara Academy of Health Sciences", "Madhesh Institute of Health Sciences",
+            "Martyr Dasharath Chand University of Health Sciences"
         ]
         self.event_bus.subscribe("PORTAL_CHANGE_DETECTED", self.handle_portal_change)
 
@@ -58,10 +64,16 @@ class ResearchAgent:
         self.active_university_index = 0
         self.universities_catalog_checklist = [
             "Tribhuvan University", "Kathmandu University", "Pokhara University",
-            "Purbanchal University", "Nepal Sanskrit University", "Lumbini Bauddha University",
-            "Agriculture and Forestry University", "Mid-Western University", "Far-Western University",
-            "Nepal Open University", "Rajarshi Janak University", "Manmohan Technical University",
-            "Madan Bhandari University of Science and Technology", "Gandaki University"
+            "Purbanchal University", "Mid-West University", "Sudurpaschim University",
+            "University of Nepal", "Agriculture and Forestry University", "Nepal Sanskrit University",
+            "Lumbini Buddhist University", "Nepal Open University", "Rajarshi Janak University",
+            "Madan Bhandari University of Science and Technology", "Yogamaya Ayurveda University",
+            "Manmohan Technical University", "Gandaki University", "Madhesh Agricultural University",
+            "Madhesh University", "Lumbini Technological University", "BPKIHS",
+            "NAMS (Bir Hospital)", "Patan Academy of Health Sciences (PAHS)",
+            "Karnali Academy of Health Sciences (KAHS)", "Rapti Academy of Health Sciences (RAHS)",
+            "Pokhara Academy of Health Sciences", "Madhesh Institute of Health Sciences",
+            "Martyr Dasharath Chand University of Health Sciences"
         ]
 
     async def run_university_catalog_cycle(self):

@@ -71,13 +71,9 @@ export default function UniversityHub({ theme, onOpenCopilot, onAddToTracker }) 
   return (
     <div className="space-y-8 animate-fadeIn w-full max-w-full overflow-hidden pb-12">
       {/* Hero Header */}
-      <div className={`p-6 sm:p-8 rounded-3xl border shadow-depth-md relative overflow-hidden transition-all ${
-        theme === 'dark' 
-          ? 'bg-[#0B101E] border-slate-800/80' 
-          : 'bg-white border-slate-200/90'
-      }`}>
-        <div className="max-w-3xl space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-500 text-xs font-bold uppercase tracking-wider">
+      <div className="editorial-surface p-6 sm:p-9 rounded-xl relative overflow-hidden transition-all">
+        <div className="max-w-3xl space-y-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--primary-glow)] border border-[var(--primary)]/30 text-[var(--primary)] text-xs font-bold uppercase tracking-wider">
             <Building2 className="w-3.5 h-3.5" />
             <span>Official Nepal University & Affiliated Colleges Registry</span>
           </div>
@@ -89,6 +85,30 @@ export default function UniversityHub({ theme, onOpenCopilot, onAddToTracker }) 
           <p className={`text-xs sm:text-sm leading-relaxed ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
             Official directory of all 26+ national, provincial, technical, and medical universities in Nepal with their verified affiliated colleges, course offerings, fee ranges, and entrance gates.
           </p>
+
+          {/* Real Dynamic Verification Progress */}
+          <div className="pt-2">
+            <div className="flex flex-wrap items-center justify-between text-xs font-semibold mb-1.5 gap-2">
+              <div className="flex items-center gap-2">
+                <span className="flex h-2 w-2 relative">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span className={theme === 'dark' ? 'text-emerald-400' : 'text-emerald-700'}>
+                  Catalog Verification Progress: <strong>{colleges.length}</strong> of an estimated <strong>60+</strong> colleges verified
+                </span>
+              </div>
+              <span className={`font-mono text-[11px] ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
+                {Math.min(100, Math.round((colleges.length / 60) * 100))}% complete ({universities.length} Universities indexed)
+              </span>
+            </div>
+            <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-emerald-500 via-teal-500 to-blue-500 rounded-full transition-all duration-700 ease-out"
+                style={{ width: `${Math.min(100, Math.round((colleges.length / 60) * 100))}%` }}
+              />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -101,7 +121,7 @@ export default function UniversityHub({ theme, onOpenCopilot, onAddToTracker }) 
               onClick={() => setSelectedCategory(cat.id)}
               className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
                 selectedCategory === cat.id
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-600/25'
+                  ? 'bg-[var(--primary)] text-white shadow-sm'
                   : theme === 'dark'
                     ? 'bg-[#0B101E] border border-slate-800/80 text-slate-400 hover:text-white'
                     : 'bg-slate-100 border border-slate-200 text-slate-600 hover:text-slate-900'

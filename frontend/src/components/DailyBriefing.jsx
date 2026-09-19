@@ -6,7 +6,7 @@ import {
 
 export default function DailyBriefing({ 
   data, 
-  theme = 'dark', 
+  theme = 'light', 
   onOpenCopilot, 
   onNavigateTab,
   onAddToTracker,
@@ -81,14 +81,10 @@ export default function DailyBriefing({
   return (
     <div className="space-y-8 animate-fadeIn w-full max-w-full overflow-hidden pb-12">
       {/* Hero Command Center Header */}
-      <div className={`p-6 sm:p-10 rounded-3xl border shadow-depth-md relative overflow-hidden transition-all ${
-        theme === 'dark' 
-          ? 'bg-[#0B101E] border-slate-800/80' 
-          : 'bg-white border-slate-200/90'
-      }`}>
+      <div className="editorial-surface p-6 sm:p-10 rounded-xl relative overflow-hidden transition-all">
         <div className="max-w-3xl space-y-4 relative z-10">
           <div className="flex flex-wrap items-center gap-2 text-xs">
-            <span className="px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
+            <span className="px-3 py-1 rounded-full bg-[var(--primary-glow)] border border-[var(--primary)]/30 text-[var(--primary)] font-bold uppercase tracking-wider flex items-center gap-1.5">
               <Compass className="w-3.5 h-3.5" />
               <span>EDUVA COMMAND CENTER • {location} ({province})</span>
             </span>
@@ -111,7 +107,7 @@ export default function DailyBriefing({
           <div className="flex flex-wrap gap-2.5 pt-2">
             <button
               onClick={() => onNavigateTab('courses')}
-              className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-md shadow-blue-600/20 transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+              className="button-primary px-4 py-2.5 rounded-lg font-bold text-xs transition-all flex items-center gap-2 cursor-pointer active:scale-95"
             >
               <Sparkles className="w-4 h-4" />
               <span>&ldquo;What Can I Study?&rdquo; Matcher</span>
@@ -126,7 +122,7 @@ export default function DailyBriefing({
             </button>
             <button
               onClick={onOpenCopilot}
-              className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-md shadow-blue-600/20 transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+              className="button-primary px-4 py-2.5 rounded-lg font-bold text-xs transition-all flex items-center gap-2 cursor-pointer active:scale-95"
             >
               <span>Ask EDUVA AI</span>
             </button>

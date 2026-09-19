@@ -232,7 +232,8 @@ async def get_authenticated_session(request: Request) -> Dict[str, Any]:
     """
     FastAPI dependency: Authenticates the student from session token.
     FAILS CLOSED: Returns 401 UNAUTHORIZED if session is missing or invalid.
-    Never falls back to hardcoded demo or guest identities.
+    Gates student-data-writing endpoints (saved items, applications, profile edits, tracker)
+    behind is_verified == True.
     """
     token = extract_token_from_request(request)
     if not token:
@@ -248,7 +249,35 @@ async def get_authenticated_session(request: Request) -> Dict[str, Any]:
             detail="Authentication failed: Session token is invalid or expired."
         )
         
-    payload["is_verified"] = True
+    student_id = payload.get("student_id")
+    is_verified = False
+    if student_id:
+        try:
+            from engine.db import global_db
+            user = global_db.get_user_by_id(student_id)
+            if user:
+                is_verified = (user.get("status") == "active")
+        except Exception:
+            is_verified = False
+
+    payload["is_verified"] = is_verified
+
+    # Gating student-data-writing endpoints behind real email verification
+    if request.method in ("POST", "PUT", "PATCH", "DELETE"):
+        path = request.url.path.lower()
+        writing_prefixes = (
+            "/api/saved",
+            "/api/applications",
+            "/api/profile",
+            "/api/tracker",
+        )
+        if any(path.startswith(prefix) for prefix in writing_prefixes):
+            if not is_verified:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Email verification required to modify student records. Please verify your email before proceeding."
+                )
+
     return payload
 
 

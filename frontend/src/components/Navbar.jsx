@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
+import { motion } from 'framer-motion'
 import { 
   Building2, GraduationCap, FileCheck2, Award, 
   Sun, Moon, Menu, X, Cpu, Search, Sparkles, BookOpen, 
@@ -18,25 +19,26 @@ export default function Navbar({
   const [isMoreOpen, setIsMoreOpen] = useState(false)
   const moreRef = useRef(null)
 
-  // Primary Navigation Tabs
+  // Compact primary navigation: specialist tools live in the More workspace.
   const primaryTabs = [
     { id: 'landing', label: 'Home' },
-    { id: 'briefing', label: 'Dashboard' },
-    { id: 'universities', label: 'Universities' },
-    { id: 'colleges', label: 'Colleges' },
+    { id: 'briefing', label: 'My Briefing' },
+    { id: 'universities', label: 'Discover' },
     { id: 'courses', label: 'Degrees' },
-    { id: 'compare', label: 'Compare' },
-    { id: 'entrance', label: 'Entrance' },
-    { id: 'alerts', label: 'Safety' }
+    { id: 'entrance', label: 'Entrance' }
   ]
 
   // Secondary Features grouped under "More"
   const baseSecondaryTabs = [
+    { id: 'colleges', label: 'College Directory' },
+    { id: 'compare', label: 'Comparison Studio' },
+    { id: 'graph', label: '3D Knowledge Graph' },
     { id: 'results', label: 'Merit Results (Analysis)' },
     { id: 'scholarships', label: 'Scholarships' },
     { id: 'loksewa', label: 'Loksewa Radar' },
     { id: 'applications', label: 'Application Tracker' },
-    { id: 'saved', label: 'Saved Items' }
+    { id: 'saved', label: 'Saved Items' },
+    { id: 'alerts', label: 'Safety & Alerts' }
   ]
 
   const secondaryTabs = userRole === 'admin' 
@@ -61,7 +63,7 @@ export default function Navbar({
   }, [])
 
   return (
-    <header className="sticky top-0 z-40 backdrop-blur-2xl transition-all duration-300 border-b w-full border-[var(--border-subtle)] bg-[var(--bg-main)]/90 text-[var(--text-primary)]">
+    <header className="sticky top-0 z-40 backdrop-blur-md transition-all duration-300 border-b w-full border-[var(--border-subtle)] bg-[var(--bg-main)]/95 text-[var(--text-primary)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-20">
           
@@ -70,16 +72,16 @@ export default function Navbar({
             className="flex items-center space-x-3 cursor-pointer group shrink-0" 
             onClick={() => handleTabClick('landing')}
           >
-            <div className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-blue-600 p-0.5 shadow-md shadow-blue-600/20 group-hover:scale-105 transition-transform flex items-center justify-center text-white">
+            <div className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-[var(--ink)] p-0.5 shadow-sm group-hover:scale-105 transition-transform flex items-center justify-center text-white">
               <span className="font-extrabold tracking-tighter text-base">E</span>
-              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-emerald-400 rounded-full border-2 border-[var(--bg-main)]"></span>
+              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-[var(--verified)] rounded-full border-2 border-[var(--bg-main)]"></span>
             </div>
             <div>
               <div className="flex items-center space-x-2">
                 <span className="text-lg sm:text-xl font-extrabold tracking-tight text-[var(--text-heading)]">
-                  EDUVA <span className="text-blue-500">AI</span>
+                  EDUVA <span className="text-[var(--primary)]">AI</span>
                 </span>
-                <span className="px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 rounded-full hidden sm:inline-block">
+                <span className="verified-badge px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded-full hidden sm:inline-block">
                   Level 1
                 </span>
               </div>
@@ -90,21 +92,29 @@ export default function Navbar({
           </div>
 
           {/* Streamlined Desktop Navigation Tabs (5 Primary + More dropdown) */}
-          <nav className="hidden lg:flex items-center p-1 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-1)]">
+          <nav className="hidden lg:flex items-center p-1 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-1)]">
             {primaryTabs.map((item) => {
               const isActive = activeTab === item.id
               return (
-                <button
+                <motion.button
                   key={item.id}
                   onClick={() => handleTabClick(item.id)}
-                  className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                  whileTap={{ scale: 0.95 }}
+                  className={`relative px-3.5 py-1.5 text-xs font-bold rounded-xl transition-colors cursor-pointer ${
                     isActive
-                      ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
+                      ? 'text-white'
                       : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                   }`}
                 >
-                  <span>{item.label}</span>
-                </button>
+                  {isActive && (
+                    <motion.div
+                      layoutId="navbar-active-indicator"
+                      className="absolute inset-0 bg-[var(--primary)] rounded-xl shadow-sm"
+                      transition={{ type: 'spring', bounce: 0.2, duration: 0.35 }}
+                    />
+                  )}
+                  <span className="relative z-10">{item.label}</span>
+                </motion.button>
               )
             })}
 
@@ -114,7 +124,7 @@ export default function Navbar({
                 onClick={() => setIsMoreOpen(!isMoreOpen)}
                 className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1 ${
                   secondaryTabs.some(t => t.id === activeTab)
-                    ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30'
+                    ? 'bg-[var(--primary-glow)] text-[var(--primary)] border border-[var(--primary)]/30'
                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                 }`}
               >
@@ -123,14 +133,14 @@ export default function Navbar({
               </button>
 
               {isMoreOpen && (
-                <div className="absolute right-0 mt-2 w-52 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-1)] shadow-2xl p-1.5 space-y-1 animate-fadeIn z-50">
+                <div className="absolute right-0 mt-2 w-52 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-1)] shadow-[var(--shadow-editorial)] p-1.5 space-y-1 animate-fadeIn z-50">
                   {secondaryTabs.map((sub) => (
                     <button
                       key={sub.id}
                       onClick={() => handleTabClick(sub.id)}
                       className={`w-full text-left px-3 py-2 text-xs font-semibold rounded-xl transition-all flex items-center justify-between cursor-pointer ${
                         activeTab === sub.id
-                          ? 'bg-blue-600 text-white'
+                          ? 'bg-[var(--primary)] text-white'
                           : 'text-[var(--text-secondary)] hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)]'
                       }`}
                     >
@@ -151,7 +161,7 @@ export default function Navbar({
               className="flex items-center gap-2 px-3 py-1.5 sm:py-2 text-xs font-bold rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-1)] text-[var(--text-primary)] hover:border-blue-500/40 transition-all cursor-pointer min-h-[40px]"
               title="Global Universal Search (Ctrl+K)"
             >
-              <Search className="w-3.5 h-3.5 text-blue-500" />
+              <Search className="w-3.5 h-3.5 text-[var(--primary)]" />
               <span className="hidden md:inline">Search...</span>
               <kbd className="hidden md:inline text-[9px] px-1.5 py-0.5 bg-[var(--surface-2)] rounded border border-[var(--border-subtle)] font-mono text-[var(--text-muted)]">Ctrl K</kbd>
             </button>
@@ -179,7 +189,7 @@ export default function Navbar({
               className="p-2 sm:px-3 sm:py-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-1)] text-[var(--text-primary)] hover:bg-[var(--surface-2)] text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer min-h-[40px]"
               title="Student Academic Profile"
             >
-              <User className="w-4 h-4 text-blue-400" />
+              <User className="w-4 h-4 text-[var(--primary)]" />
               <span className="hidden sm:inline">Profile</span>
             </button>
 

@@ -8,7 +8,7 @@ import datetime
 from contextlib import asynccontextmanager
 from typing import Dict, List, Any, Optional
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Query, UploadFile, File, Form, Depends, Request, Header
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -31,6 +31,7 @@ from engine.eligibility_engine import global_eligibility_engine
 from engine.comparison_engine import global_comparison_engine
 from engine.gemini_service import global_gemini_service
 from engine.ai_gateway import global_ai_gateway
+from engine.email_service import global_email_service
 from engine.auth import (
     verify_admin_key, require_admin_user, create_session_token, verify_session_token,
     get_authenticated_session, verify_ws_session, hash_password, verify_password,
@@ -180,6 +181,9 @@ class LoginRequest(BaseModel):
 class VerifyEmailRequest(BaseModel):
     token: str
 
+class ResendVerificationRequest(BaseModel):
+    email: str
+
 @app.post("/api/auth/register")
 @limiter.limit("5/minute")
 async def register_student(req: RegisterRequest, request: Request):
@@ -193,7 +197,6 @@ async def register_student(req: RegisterRequest, request: Request):
     
     user_id = f"std_{uuid.uuid4().hex[:10]}"
     pw_hash = hash_password(req.password)
-    import datetime
     verification_token = generate_verification_token()
     token_exp = (datetime.datetime.now() + datetime.timedelta(hours=24)).isoformat()
 
@@ -203,7 +206,7 @@ async def register_student(req: RegisterRequest, request: Request):
         name=req.name.strip(),
         password_hash=pw_hash,
         role="student",
-        status="active",
+        status="pending_verification",
         verification_token=verification_token,
         verification_token_expires=token_exp
     )
@@ -228,29 +231,78 @@ async def register_student(req: RegisterRequest, request: Request):
             academic_score=f"{req.gpa or 3.0} GPA"
         )
     
-    session_id = f"sess_{uuid.uuid4().hex[:12]}"
-    token = create_session_token(session_id, user_id, role="student")
-    
+    # Dispatch real transactional verification email via Resend
+    email_res = global_email_service.send_verification_email(
+        to_email=email,
+        student_name=req.name.strip(),
+        verification_token=verification_token
+    )
+
     return {
-        "status": "SUCCESS",
-        "message": "Student registration completed successfully.",
-        "user": {"id": user_id, "name": req.name.strip(), "email": email, "role": "student", "status": "active"},
-        "session_id": session_id,
-        "student_id": user_id,
-        "token": token,
-        "verification_token": verification_token
+        "status": "PENDING_VERIFICATION",
+        "message": "Registration successful. A verification email has been sent. Please verify your email before logging in.",
+        "user": {
+            "id": user_id,
+            "name": req.name.strip(),
+            "email": email,
+            "role": "student",
+            "status": "pending_verification"
+        },
+        "email_delivery": email_res.get("status")
     }
 
+@app.post("/api/auth/resend-verification")
+@limiter.limit("3/minute")
+async def resend_verification_endpoint(req: ResendVerificationRequest, request: Request):
+    email = validate_and_normalize_email(req.email)
+    user = global_db.get_user_by_email(email)
+    if not user:
+        # Prevent account enumeration: return standard confirmation message
+        return {
+            "status": "SUCCESS",
+            "message": "If an account with this email is pending verification, a new verification link has been sent."
+        }
+    
+    if user.get("status") == "active":
+        return {
+            "status": "ALREADY_VERIFIED",
+            "message": "This account is already verified. You may proceed to log in."
+        }
+    
+    new_token = generate_verification_token()
+    token_exp = (datetime.datetime.now() + datetime.timedelta(hours=24)).isoformat()
+    global_db.update_verification_token(email, new_token, token_exp)
+    
+    email_res = global_email_service.send_verification_email(
+        to_email=email,
+        student_name=user.get("name", "Student"),
+        verification_token=new_token
+    )
+
+    return {
+        "status": "SUCCESS",
+        "message": "A new verification email has been sent to your email address.",
+        "email_delivery": email_res.get("status")
+    }
+
+@app.get("/api/auth/verify-email")
 @app.post("/api/auth/verify-email")
 @limiter.limit("10/minute")
-async def verify_email_endpoint(req: VerifyEmailRequest, request: Request):
-    user = global_db.verify_user_email(req.token)
+async def verify_email_endpoint(
+    request: Request,
+    token: Optional[str] = Query(None),
+    req: Optional[VerifyEmailRequest] = None
+):
+    token_str = token or (req.token if req else None)
+    if not token_str:
+        raise HTTPException(status_code=400, detail="Verification token is required.")
+    user = global_db.verify_user_email(token_str)
     if not user:
         raise HTTPException(status_code=400, detail="Invalid or expired verification token.")
     return {
         "status": "SUCCESS",
-        "message": "Email address verified successfully.",
-        "user": {"id": user["id"], "email": user["email"], "name": user.get("name"), "role": user.get("role")}
+        "message": "Email address verified successfully. You may now log in.",
+        "user": {"id": user["id"], "email": user["email"], "name": user.get("name"), "role": user.get("role"), "status": "active"}
     }
 
 @app.post("/api/auth/login")
@@ -434,6 +486,17 @@ async def get_single_course(course_id: str):
     if not c:
         raise HTTPException(status_code=404, detail="Course not found")
     return c
+
+@app.get("/api/knowledge-graph")
+async def get_knowledge_graph_endpoint():
+    return {
+        "summary": global_kg.get_summary(),
+        "universities": [u.model_dump() if hasattr(u, "model_dump") else u.dict() for u in global_kg.universities.values()],
+        "programs": [p.model_dump() if hasattr(p, "model_dump") else p.dict() for p in global_kg.programs.values()],
+        "exams": [e.model_dump() if hasattr(e, "model_dump") else e.dict() for e in global_kg.exams.values()],
+        "scholarships": [s.model_dump() if hasattr(s, "model_dump") else s.dict() for s in global_kg.scholarships.values()],
+        "changes": global_kg.change_history[-15:] if hasattr(global_kg, "change_history") else []
+    }
 
 @app.get("/api/search")
 async def universal_search(q: str = Query(..., min_length=1)):
@@ -1200,6 +1263,59 @@ async def copilot_chat(
         student_id=active_student_id,
         session_id=active_session_id,
         is_voice=req.is_voice or False
+    )
+
+@app.post("/api/copilot/chat/stream")
+@limiter.limit("30/minute")
+async def copilot_chat_stream(
+    request: Request,
+    req: ChatRequest,
+    session: Dict[str, str] = Depends(get_authenticated_session)
+):
+    active_session_id = session.get("session_id") or req.session_id or "default_session"
+    active_student_id = session.get("student_id") or req.student_id or "student_user"
+
+    async def sse_generator():
+        # Start event
+        yield f"data: {json.dumps({'type': 'start', 'session_id': active_session_id})}\n\n"
+        
+        # Grounded answer processing
+        chat_res = await copilot_agent.answer_query(
+            user_query=req.query,
+            student_id=active_student_id,
+            session_id=active_session_id,
+            is_voice=req.is_voice or False
+        )
+        
+        raw_text = chat_res.get("response", "")
+        # Stream sequential tokens
+        tokens = re.findall(r'\S+|\s+', raw_text)
+        for token in tokens:
+            yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"
+            await asyncio.sleep(0.01)
+        
+        # Done event with structured artifacts
+        done_payload = {
+            "type": "done",
+            "response": raw_text,
+            "response_type": chat_res.get("response_type", "TEXT"),
+            "cards": chat_res.get("cards", []),
+            "comparison_data": chat_res.get("comparison_data"),
+            "suggested_actions": chat_res.get("suggested_actions", []),
+            "source_citation": chat_res.get("source_citation"),
+            "telemetry": chat_res.get("telemetry"),
+            "session_context": chat_res.get("session_context")
+        }
+        yield f"data: {json.dumps(done_payload)}\n\n"
+
+    return StreamingResponse(
+        sse_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"
+        }
     )
 
 @app.get("/api/chat/history")
