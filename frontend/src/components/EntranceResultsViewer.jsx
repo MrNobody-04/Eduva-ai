@@ -26,7 +26,7 @@ export default function EntranceResultsViewer({ results = [], theme }) {
   }
 
   return (
-    <div className="space-y-6 sm:space-y-8 animate-fadeIn w-full max-w-full overflow-hidden pb-12">
+    <div className="space-y-6 sm:space-y-8 w-full max-w-full overflow-hidden pb-12">
       {/* Header */}
       <div className={`p-5 sm:p-8 rounded-3xl border shadow-depth-md relative overflow-hidden transition-all ${
         theme === 'dark' 
@@ -126,7 +126,7 @@ export default function EntranceResultsViewer({ results = [], theme }) {
 
       {/* Retrieved Examination Record Modal */}
       {isPdfModalOpen && selectedResult && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
           <div className={`max-w-2xl w-full rounded-3xl border shadow-2xl p-6 sm:p-8 space-y-6 relative ${
             theme === 'dark' ? 'bg-gray-900 border-gray-800 text-white' : 'bg-white border-slate-200 text-slate-900'
           }`}>

@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
 import { 
   AlertTriangle, ShieldAlert, MapPin, Building2, Flame, 
   CheckCircle2, Clock, Calendar, ExternalLink, RefreshCw 
@@ -102,7 +101,7 @@ export default function AlertsAndSafety({ theme }) {
   }
 
   return (
-    <div className="space-y-8 animate-fadeIn w-full max-w-full pb-12">
+    <div className="space-y-8 w-full max-w-full pb-12">
       {/* Banner */}
       <div className={`p-6 sm:p-8 rounded-3xl border shadow-depth-md relative overflow-hidden transition-all duration-300 ${
         theme === 'dark'
@@ -128,13 +127,13 @@ export default function AlertsAndSafety({ theme }) {
             <div className="flex items-center gap-2 pt-1 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
               <Clock className="w-3.5 h-3.5 text-blue-500" />
               <span>Telemetry sync: {lastRefreshed}</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
             </div>
           </div>
 
           <button
             onClick={fetchAlerts}
-            className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition-all cursor-pointer shrink-0 border hover:scale-105 shadow-md ${
+            className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition-all cursor-pointer shrink-0 border shadow-md ${
               theme === 'dark'
                 ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
                 : 'bg-blue-600 hover:bg-blue-500 text-white border-blue-600 shadow-blue-500/20'
@@ -147,7 +146,7 @@ export default function AlertsAndSafety({ theme }) {
       </div>
 
       {loading && (
-        <div className="py-12 text-center text-xs font-semibold opacity-70 animate-pulse flex items-center justify-center gap-2">
+        <div className="py-12 text-center text-xs font-semibold opacity-70 flex items-center justify-center gap-2">
           <RefreshCw className="w-4 h-4 animate-spin text-blue-500" />
           <span>Synchronizing with national hazard registries & telemetry...</span>
         </div>
@@ -164,11 +163,8 @@ export default function AlertsAndSafety({ theme }) {
         {alerts.map((alert, idx) => {
           const style = getSeverityStyle(alert.severity)
           return (
-            <motion.div
+            <div
               key={alert.id || idx}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: Math.min(idx, 8) * 0.05, duration: 0.3, ease: 'easeOut' }}
               className={`card-3d p-6 sm:p-8 rounded-3xl border duration-300 flex flex-col justify-between hover:shadow-2xl ${
                 theme === 'dark' 
                   ? `bg-[#0E1424] ${style.card}` 
@@ -272,7 +268,7 @@ export default function AlertsAndSafety({ theme }) {
                   <span className="font-semibold text-emerald-500">Active Monitoring</span>
                 )}
               </div>
-            </motion.div>
+            </div>
           )
         })}
 

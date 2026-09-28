@@ -1,5 +1,4 @@
 import React, { useState } from 'react'
-import { motion } from 'framer-motion'
 import { 
   Heart, MessageCircle, Send, Bookmark, MoreHorizontal, 
   Flame, CheckCircle2, Share2, Sparkles, AlertCircle, Clock, Image as ImageIcon 
@@ -44,7 +43,7 @@ export default function NewsPortal({ newsFeed = [], onLikeNews, theme = 'dark' }
   }
 
   return (
-    <div className="space-y-6 sm:space-y-8 animate-fadeIn max-w-4xl mx-auto">
+    <div className="space-y-6 sm:space-y-8 max-w-4xl mx-auto">
       
       {/* Header Banner */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-rose-950/80 via-pink-950/70 to-indigo-950/70 border border-rose-500/30 p-6 sm:p-8 shadow-2xl">
@@ -52,7 +51,7 @@ export default function NewsPortal({ newsFeed = [], onLikeNews, theme = 'dark' }
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center space-x-2 text-xs font-extrabold text-rose-400 uppercase tracking-widest mb-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping"></span>
+              <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
               <span>Live Social Radar</span>
               <span>•</span>
               <span>Instagram Feed</span>
@@ -107,11 +106,8 @@ export default function NewsPortal({ newsFeed = [], onLikeNews, theme = 'dark' }
           const displayLikes = isLiked ? baseLikes + 1 : baseLikes
 
           return (
-            <motion.article
+            <article
               key={item.id}
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: Math.min(idx, 6) * 0.06, duration: 0.32, ease: 'easeOut' }}
               className={`rounded-3xl border overflow-hidden shadow-xl card-3d ${cardBg}`}
             >
               {/* Instagram Post Header */}
@@ -166,12 +162,12 @@ export default function NewsPortal({ newsFeed = [], onLikeNews, theme = 'dark' }
                   <div className="flex items-center space-x-4">
                     <button
                       onClick={() => toggleLike(item.id)}
-                      className="transition-transform active:scale-125 cursor-pointer"
+                      className="transition-transform cursor-pointer"
                     >
                       <Heart
                         className={`w-6 h-6 ${
                           isLiked
-                            ? 'text-rose-500 fill-rose-500 animate-bounce'
+                            ? 'text-rose-500 fill-rose-500'
                             : theme === 'dark' ? 'text-gray-300 hover:text-rose-400' : 'text-slate-700 hover:text-rose-500'
                         }`}
                       />
@@ -189,7 +185,7 @@ export default function NewsPortal({ newsFeed = [], onLikeNews, theme = 'dark' }
 
                   <button
                     onClick={() => toggleSave(item.id)}
-                    className="transition-transform active:scale-110 cursor-pointer"
+                    className="transition-transform cursor-pointer"
                   >
                     <Bookmark
                       className={`w-6 h-6 ${
@@ -230,7 +226,7 @@ export default function NewsPortal({ newsFeed = [], onLikeNews, theme = 'dark' }
                 </div>
               </div>
 
-            </motion.article>
+            </article>
           )
         })}
       </div>

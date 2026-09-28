@@ -1,5 +1,4 @@
 import React from 'react'
-import { motion } from 'framer-motion'
 import { 
   Compass, Calendar, Clock, AlertTriangle, ArrowRight, 
   Sparkles, Building2, BookOpen, GraduationCap, CheckCircle2, ShieldCheck, Flame
@@ -80,7 +79,7 @@ export default function DailyBriefing({
   ]
 
   return (
-    <div className="space-y-8 animate-fadeIn w-full max-w-full overflow-hidden pb-12">
+    <div className="space-y-8 w-full max-w-full overflow-hidden pb-12">
       {/* Hero Command Center Header */}
       <div className="editorial-surface p-6 sm:p-10 rounded-xl relative overflow-hidden transition-all">
         <div className="max-w-3xl space-y-4 relative z-10">
@@ -108,14 +107,14 @@ export default function DailyBriefing({
           <div className="flex flex-wrap gap-2.5 pt-2">
             <button
               onClick={() => onNavigateTab('courses')}
-              className="button-primary px-4 py-2.5 rounded-lg font-bold text-xs transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+              className="button-primary px-4 py-2.5 rounded-lg font-bold text-xs transition-all flex items-center gap-2 cursor-pointer"
             >
               <Sparkles className="w-4 h-4" />
               <span>&ldquo;What Can I Study?&rdquo; Matcher</span>
             </button>
             <button
               onClick={() => onNavigateTab('compare')}
-              className={`px-4 py-2.5 rounded-xl border font-bold text-xs transition-all cursor-pointer active:scale-95 ${
+              className={`px-4 py-2.5 rounded-xl border font-bold text-xs transition-all cursor-pointer ${
                 theme === 'dark' ? 'bg-[#060911] border-slate-700 text-slate-200 hover:border-blue-500' : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
               }`}
             >
@@ -123,7 +122,7 @@ export default function DailyBriefing({
             </button>
             <button
               onClick={onOpenCopilot}
-              className="button-primary px-4 py-2.5 rounded-lg font-bold text-xs transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+              className="button-primary px-4 py-2.5 rounded-lg font-bold text-xs transition-all flex items-center gap-2 cursor-pointer"
             >
               <span>Ask EDUVA AI</span>
             </button>
@@ -143,12 +142,8 @@ export default function DailyBriefing({
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {upcomingDeadlines.map((dl, idx) => (
-            <motion.div
+            <div
               key={idx}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.06, duration: 0.32, ease: 'easeOut' }}
-              whileHover={{ y: -4 }}
               className={`p-5 rounded-3xl border transition-colors hover:shadow-xl flex flex-col justify-between ${
                 theme === 'dark' ? 'bg-gray-900/80 border-gray-800' : 'bg-white border-slate-200'
               }`}
@@ -220,7 +215,7 @@ export default function DailyBriefing({
                   )}
                 </div>
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
       </div>

@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
 import { 
   Mail, Shield, ShieldAlert, ShieldCheck, Trash2, CheckCircle2, 
   AlertTriangle, RefreshCw, Lock, Search, FileText, Send, Sparkles, Inbox
@@ -94,7 +93,7 @@ export default function EmailGuardian({ theme }) {
   }
 
   return (
-    <div className="space-y-6 sm:space-y-8 animate-fadeIn w-full max-w-full overflow-hidden">
+    <div className="space-y-6 sm:space-y-8 w-full max-w-full overflow-hidden">
       {/* Header Banner */}
       <div className={`p-5 sm:p-8 rounded-3xl border shadow-xl relative overflow-hidden transition-all ${
         theme === 'dark' 
@@ -175,11 +174,8 @@ export default function EmailGuardian({ theme }) {
 
             <div className="space-y-2.5 max-h-[550px] overflow-y-auto pr-1">
               {inbox.map((mail, idx) => (
-                <motion.div
+                <div
                   key={mail.id}
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: Math.min(idx, 10) * 0.03, duration: 0.25, ease: 'easeOut' }}
                   onClick={() => setSelectedMail(mail)}
                   className={`p-4 rounded-2xl border cursor-pointer transition-colors ${
                     selectedMail?.id === mail.id
@@ -213,7 +209,7 @@ export default function EmailGuardian({ theme }) {
                     <span>{mail.received_at}</span>
                     <span>{mail.sender}</span>
                   </div>
-                </motion.div>
+                </div>
               ))}
             </div>
           </div>
@@ -375,7 +371,7 @@ export default function EmailGuardian({ theme }) {
         </form>
 
         {scanResult && (
-          <div className={`mt-5 p-4 rounded-2xl border space-y-2 animate-fadeIn ${
+          <div className={`mt-5 p-4 rounded-2xl border space-y-2 ${
             scanResult.is_spam
               ? 'bg-rose-500/15 border-rose-500/40 text-rose-300'
               : 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'

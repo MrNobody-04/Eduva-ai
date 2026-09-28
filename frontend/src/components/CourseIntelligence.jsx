@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
 import { 
   BookOpen, Compass, Search, Filter, CheckCircle2, AlertCircle, 
   HelpCircle, GraduationCap, Clock, Award, ArrowRight, Sparkles, Building2, Sliders
@@ -69,7 +68,7 @@ export default function CourseIntelligence({ theme }) {
   })
 
   return (
-    <div className="space-y-8 animate-fadeIn w-full max-w-full overflow-hidden pb-12">
+    <div className="space-y-8 w-full max-w-full overflow-hidden pb-12">
       {/* Header Banner */}
       <div className={`p-6 sm:p-8 rounded-3xl border shadow-depth-md relative overflow-hidden transition-all ${
         theme === 'dark' 
@@ -172,12 +171,8 @@ export default function CourseIntelligence({ theme }) {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {evaluationResult.eligible_programs.slice(0, 6).map((prog, idx) => (
-                <motion.div
+                <div
                   key={prog.course_id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.05, duration: 0.3 }}
-                  whileHover={{ y: -4, scale: 1.015 }}
                   className={`p-4 rounded-2xl border cursor-pointer transition-colors duration-200 hover:shadow-lg ${
                     theme === 'dark' ? 'bg-gray-800/50 border-gray-700 hover:border-blue-500/50 hover:shadow-blue-500/10' : 'bg-slate-50 border-slate-200 hover:border-blue-400 hover:shadow-blue-400/10'
                   }`}
@@ -199,7 +194,7 @@ export default function CourseIntelligence({ theme }) {
                     <span className="opacity-60">{prog.duration}</span>
                     <span className="font-bold text-amber-400 truncate max-w-[120px]">{prog.entrance_exam}</span>
                   </div>
-                </motion.div>
+                </div>
               ))}
             </div>
           </div>
@@ -298,7 +293,7 @@ export default function CourseIntelligence({ theme }) {
 
       {/* Course Detail Modal */}
       {selectedCourse && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
           <div className={`max-w-3xl w-full rounded-3xl border shadow-2xl p-6 sm:p-8 space-y-6 max-h-[90vh] overflow-y-auto ${
             theme === 'dark' ? 'bg-gray-900 border-gray-800 text-white' : 'bg-white border-slate-200 text-slate-900'
           }`}>

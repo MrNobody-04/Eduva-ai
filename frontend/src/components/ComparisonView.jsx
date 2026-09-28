@@ -71,7 +71,7 @@ export default function ComparisonView({ theme }) {
   }
 
   return (
-    <div className="space-y-8 animate-fadeIn w-full max-w-full overflow-hidden pb-12">
+    <div className="space-y-8 w-full max-w-full overflow-hidden pb-12">
       {/* Banner */}
       <div className={`p-6 sm:p-8 rounded-3xl border shadow-depth-md relative overflow-hidden transition-all ${
         theme === 'dark' 
@@ -120,7 +120,7 @@ export default function ComparisonView({ theme }) {
           <button
             onClick={() => requestAiAnalysis()}
             disabled={isAiAnalyzing || !data?.entities?.length}
-            className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center gap-2 shadow-md shadow-blue-600/20 cursor-pointer disabled:opacity-50 active:scale-95 transition-all"
+            className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center gap-2 shadow-md shadow-blue-600/20 cursor-pointer disabled:opacity-50 transition-all"
           >
             <Bot className="w-4 h-4" />
             <span>{isAiAnalyzing ? 'Synthesizing with 4-Provider Gateway...' : 'Analyze Trade-offs with AI'}</span>
@@ -130,7 +130,7 @@ export default function ComparisonView({ theme }) {
 
       {/* AI Analysis Card */}
       {aiAnalysis && (
-        <div className={`p-6 rounded-3xl border animate-fadeIn space-y-3 ${
+        <div className={`p-6 rounded-3xl border space-y-3 ${
           theme === 'dark' ? 'bg-[#0E1424] border-blue-500/30 text-slate-100' : 'bg-blue-50/70 border-blue-200 text-slate-900'
         }`}>
           <div className="flex items-center justify-between">

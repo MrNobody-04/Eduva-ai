@@ -78,7 +78,7 @@ export default function AiApplicationDrafter({ theme }) {
   }
 
   return (
-    <div className="space-y-6 sm:space-y-8 animate-fadeIn w-full max-w-full overflow-hidden">
+    <div className="space-y-6 sm:space-y-8 w-full max-w-full overflow-hidden">
       {/* Header Banner */}
       <div className={`p-5 sm:p-8 rounded-3xl border shadow-xl relative overflow-hidden transition-all ${
         theme === 'dark' 

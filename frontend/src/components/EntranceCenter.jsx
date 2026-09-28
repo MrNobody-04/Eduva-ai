@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
 import { 
   Calendar, Clock, BookOpen, AlertCircle, FileText, 
   ExternalLink, Search, CheckCircle2, ChevronRight, X, ShieldCheck
@@ -56,7 +55,7 @@ export default function EntranceCenter({ theme }) {
       return { label: 'Concluded', class: 'bg-slate-500/15 text-slate-500 dark:text-slate-400 border-slate-500/30 font-bold' }
     }
     if (days === 0) {
-      return { label: 'Closing Today', class: 'bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-500/40 font-black animate-pulse' }
+      return { label: 'Closing Today', class: 'bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-500/40 font-black' }
     }
     if (days <= 14) {
       return { label: `${days} Days Left`, class: 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30 font-black' }
@@ -68,7 +67,7 @@ export default function EntranceCenter({ theme }) {
   }
 
   return (
-    <div className="space-y-8 animate-fadeIn pb-12">
+    <div className="space-y-8 pb-12">
       {/* Header Banner */}
       <div className={`p-6 sm:p-8 rounded-3xl border shadow-depth-md relative overflow-hidden transition-all ${
         theme === 'dark'
@@ -111,7 +110,7 @@ export default function EntranceCenter({ theme }) {
 
       {/* Loading State */}
       {loading && (
-        <div className="py-12 text-center text-xs font-semibold opacity-70 animate-pulse">
+        <div className="py-12 text-center text-xs font-semibold opacity-70">
           Loading verified entrance examinations...
         </div>
       )}
@@ -123,11 +122,8 @@ export default function EntranceCenter({ theme }) {
           const deadline = exam.registration_deadline || exam.application_deadline || 'Announced Soon'
           const fee = exam.exam_fee || exam.application_fee || 'Standard Quota'
           return (
-            <motion.div
+            <div
               key={exam.id}
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: Math.min(idx, 8) * 0.05, duration: 0.32, ease: 'easeOut' }}
               className={`card-3d p-6 rounded-3xl border transition-colors duration-300 flex flex-col justify-between group ${
                 theme === 'dark'
                   ? 'bg-[#0B101E] border-slate-800/80 hover:border-blue-500/50 hover:shadow-depth-md'
@@ -209,15 +205,15 @@ export default function EntranceCenter({ theme }) {
                   </a>
                 )}
               </div>
-            </motion.div>
+            </div>
           )
         })}
       </div>
 
       {/* Modern Executive Syllabus Modal */}
       {selectedExam && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
-          <div className={`w-full max-w-2xl max-h-[85vh] rounded-3xl border shadow-2xl flex flex-col overflow-hidden animate-slide-up ${
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md">
+          <div className={`w-full max-w-2xl max-h-[85vh] rounded-3xl border shadow-2xl flex flex-col overflow-hidden ${
             theme === 'dark' ? 'bg-[#0E1424] border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900'
           }`}>
             <div className={`p-5 border-b flex items-center justify-between ${
@@ -331,7 +327,7 @@ export default function EntranceCenter({ theme }) {
                   href={selectedExam.official_notice_url}
                   target="_blank"
                   rel="noreferrer"
-                  className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-md transition-all hover:scale-105"
+                  className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-md transition-all"
                 >
                   <span>Official Registration Portal</span>
                   <ExternalLink className="w-3.5 h-3.5" />

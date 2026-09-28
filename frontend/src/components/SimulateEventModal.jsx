@@ -27,7 +27,7 @@ export default function SimulateEventModal({ isOpen, onClose, onEventTriggered }
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
       <div className="relative w-full max-w-xl bg-[#0B0F19] border border-gray-800 rounded-2xl shadow-2xl p-6 space-y-5">
         
         {/* Header */}
@@ -123,7 +123,7 @@ export default function SimulateEventModal({ isOpen, onClose, onEventTriggered }
 
         {/* Feedback Alert */}
         {lastResult && (
-          <div className="p-3 rounded-lg bg-emerald-950/30 border border-emerald-500/30 flex items-center space-x-2 text-xs text-emerald-300 animate-fadeIn">
+          <div className="p-3 rounded-lg bg-emerald-950/30 border border-emerald-500/30 flex items-center space-x-2 text-xs text-emerald-300">
             <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
             <span>
               Autonomous Event <strong>{lastResult.eventType}</strong> executed successfully! Check AI Control Center and Daily Briefing.

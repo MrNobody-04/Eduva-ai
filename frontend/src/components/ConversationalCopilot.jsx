@@ -304,8 +304,8 @@ export default function ConversationalCopilot({ isOpen, onClose, initialQuery = 
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/40 backdrop-blur-sm animate-fadeIn">
-      <div className={`w-full max-w-3xl h-[88vh] rounded-2xl border shadow-[var(--shadow-editorial)] flex flex-col overflow-hidden transition-all animate-slide-up ${
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/40 backdrop-blur-sm">
+      <div className={`w-full max-w-3xl h-[88vh] rounded-2xl border shadow-[var(--shadow-editorial)] flex flex-col overflow-hidden transition-all ${
         theme === 'dark' ? 'bg-[#0B101E] border-slate-800/80 text-white' : 'bg-[#FBFBFB] border-[var(--border-subtle)] text-[var(--text-primary)]'
       }`}>
         {/* Header with High-Precision Status Bar */}
@@ -381,7 +381,7 @@ export default function ConversationalCopilot({ isOpen, onClose, initialQuery = 
                   <p className="whitespace-pre-wrap">
                     {m.text}
                     {m.isStreaming && (
-                      <span className="inline-block w-1.5 h-4 ml-1 bg-indigo-500 animate-pulse align-middle" />
+                      <span className="inline-block w-1.5 h-4 ml-1 bg-indigo-500 align-middle" />
                     )}
                   </p>
 
@@ -518,9 +518,9 @@ export default function ConversationalCopilot({ isOpen, onClose, initialQuery = 
               animate={{ opacity: 1 }} 
               className="flex items-center space-x-2 text-xs opacity-70 p-2 text-[var(--text-secondary)]"
             >
-              <div className="w-2 h-2 rounded-full bg-[var(--primary)] animate-bounce"></div>
-              <div className="w-2 h-2 rounded-full bg-[var(--primary)] animate-bounce delay-100"></div>
-              <div className="w-2 h-2 rounded-full bg-[var(--primary)] animate-bounce delay-200"></div>
+              <div className="w-2 h-2 rounded-full bg-[var(--primary)]"></div>
+              <div className="w-2 h-2 rounded-full bg-[var(--primary)] delay-100"></div>
+              <div className="w-2 h-2 rounded-full bg-[var(--primary)] delay-200"></div>
               <span className="font-medium">EDUVA AI is analyzing official university records...</span>
             </motion.div>
           )}
@@ -538,7 +538,7 @@ export default function ConversationalCopilot({ isOpen, onClose, initialQuery = 
               onClick={() => scrollToBottom(true)}
               className="absolute bottom-20 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-full bg-indigo-600 text-white text-xs font-bold shadow-lg flex items-center gap-1.5 cursor-pointer z-20 hover:bg-indigo-500 transition-all"
             >
-              <ChevronDown className="w-3.5 h-3.5 animate-bounce" />
+              <ChevronDown className="w-3.5 h-3.5" />
               <span>New messages</span>
             </motion.button>
           )}
@@ -556,7 +556,7 @@ export default function ConversationalCopilot({ isOpen, onClose, initialQuery = 
             onClick={toggleVoice}
             className={`p-2.5 rounded-xl border transition-all cursor-pointer ${
               isListening
-                ? 'bg-rose-600 text-white animate-pulse border-rose-500'
+                ? 'bg-rose-600 text-white border-rose-500'
                 : theme === 'dark' 
                   ? 'bg-[#060911] border-slate-700 text-slate-300 hover:border-blue-500' 
                   : 'bg-[var(--surface-2)] border-[var(--border-subtle)] text-[var(--text-primary)] hover:border-[var(--primary)]'

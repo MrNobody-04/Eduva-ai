@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
 import { Bookmark, Building2, BookOpen, GraduationCap, Calendar, Trash2, ArrowRight, ExternalLink } from 'lucide-react'
 
 export default function SavedHub({ theme, onNavigateTab }) {
@@ -46,7 +45,7 @@ export default function SavedHub({ theme, onNavigateTab }) {
   })
 
   return (
-    <div className="space-y-8 animate-fadeIn">
+    <div className="space-y-8">
       {/* Header */}
       <div className={`p-6 sm:p-8 rounded-3xl border shadow-xl relative overflow-hidden transition-all ${
         theme === 'dark'
@@ -85,7 +84,7 @@ export default function SavedHub({ theme, onNavigateTab }) {
       </div>
 
       {loading && (
-        <div className="py-12 text-center text-xs opacity-60 animate-pulse">
+        <div className="py-12 text-center text-xs opacity-60">
           Loading saved bookmarks...
         </div>
       )}
@@ -93,12 +92,8 @@ export default function SavedHub({ theme, onNavigateTab }) {
       {/* Grid of Saved Items */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filtered.map((item, idx) => (
-          <motion.div
+          <div
             key={item.id}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: Math.min(idx, 8) * 0.05, duration: 0.3, ease: 'easeOut' }}
-            whileHover={{ y: -4 }}
             className={`p-6 rounded-3xl border flex flex-col justify-between group transition-colors ${
               theme === 'dark'
                 ? 'bg-[#0E1424] border-slate-800 hover:border-blue-500/40'
@@ -146,7 +141,7 @@ export default function SavedHub({ theme, onNavigateTab }) {
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
-          </motion.div>
+          </div>
         ))}
 
         {filtered.length === 0 && !loading && (

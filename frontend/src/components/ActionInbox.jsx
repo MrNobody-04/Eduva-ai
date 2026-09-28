@@ -3,7 +3,7 @@ import { ShieldCheck, ShieldAlert, CheckCircle, XCircle, AlertTriangle } from 'l
 
 export default function ActionInbox({ pendingApprovals, onResolveApproval }) {
   return (
-    <div className="space-y-6 animate-fadeIn">
+    <div className="space-y-6">
       
       {/* Header */}
       <div className="bg-[#111827] border border-gray-800 rounded-2xl p-6">

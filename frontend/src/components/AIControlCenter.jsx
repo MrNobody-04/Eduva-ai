@@ -165,7 +165,7 @@ export default function AIControlCenter({ theme }) {
   }
 
   return (
-    <div className="space-y-8 animate-fadeIn w-full max-w-full overflow-hidden">
+    <div className="space-y-8 w-full max-w-full overflow-hidden">
       {/* Banner */}
       <div className={`p-6 sm:p-8 rounded-3xl border shadow-xl relative overflow-hidden transition-all ${
         theme === 'dark' 
@@ -175,7 +175,7 @@ export default function AIControlCenter({ theme }) {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="max-w-3xl space-y-2">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-black uppercase tracking-wide">
-              <Cpu className="w-3.5 h-3.5 animate-pulse" />
+              <Cpu className="w-3.5 h-3.5" />
               <span>Autonomous AI Control Center & Living Knowledge Telemetry</span>
             </div>
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight">
@@ -223,7 +223,7 @@ export default function AIControlCenter({ theme }) {
 
         {/* Supabase PostgreSQL Cloud Database Status */}
         {dbStatus && (
-          <div className="mt-4 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs animate-fadeIn">
+          <div className="mt-4 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
                 <Database className="w-4 h-4" />
@@ -309,7 +309,7 @@ export default function AIControlCenter({ theme }) {
                 : 'bg-slate-500/10 border-slate-500/30 text-slate-400'
 
               const dotColor = isConnected
-                ? 'bg-emerald-400 animate-pulse'
+                ? 'bg-emerald-400'
                 : isWarning
                 ? 'bg-amber-400'
                 : isDown
@@ -409,7 +409,7 @@ export default function AIControlCenter({ theme }) {
 
         {/* Live Simulation Trace Result */}
         {simResult && (
-          <div className="mt-5 p-5 rounded-2xl bg-gray-950/80 border border-gray-800 space-y-3 animate-fadeIn text-xs">
+          <div className="mt-5 p-5 rounded-2xl bg-gray-950/80 border border-gray-800 space-y-3 text-xs">
             <div className="flex items-center justify-between font-black">
               <span className="text-emerald-400 flex items-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4" /> Status: {simResult.status}
@@ -437,7 +437,7 @@ export default function AIControlCenter({ theme }) {
         )}
 
         {deadlineResult && (
-          <div className="mt-4 p-4 rounded-xl bg-amber-950/20 border border-amber-900/40 text-amber-300 text-xs flex items-center justify-between animate-fadeIn">
+          <div className="mt-4 p-4 rounded-xl bg-amber-950/20 border border-amber-900/40 text-amber-300 text-xs flex items-center justify-between">
             <span>🚨 Semantic Change Detected: IOE Application Deadline Extended to {deadlineResult.change_recorded?.new_value}</span>
             <span className="font-bold">Affected Students Notified</span>
           </div>

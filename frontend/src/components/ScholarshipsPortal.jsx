@@ -1,5 +1,4 @@
 import React, { useState } from 'react'
-import { motion } from 'framer-motion'
 import { Award, CheckCircle2, ExternalLink, Search, Clock, DollarSign, Sparkles, GraduationCap } from 'lucide-react'
 
 export default function ScholarshipsPortal({ theme = 'dark' }) {
@@ -64,7 +63,7 @@ export default function ScholarshipsPortal({ theme = 'dark' }) {
   )
 
   return (
-    <div className="space-y-6 sm:space-y-8 animate-fadeIn max-w-5xl mx-auto">
+    <div className="space-y-6 sm:space-y-8 max-w-5xl mx-auto">
       
       {/* Banner */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-purple-950/90 via-indigo-950/80 to-blue-950/80 border border-purple-500/30 p-6 sm:p-10 shadow-2xl">
@@ -72,7 +71,7 @@ export default function ScholarshipsPortal({ theme = 'dark' }) {
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
             <div className="flex items-center space-x-2 text-xs font-black text-purple-400 uppercase tracking-widest mb-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-purple-400 animate-ping"></span>
+              <span className="w-2.5 h-2.5 rounded-full bg-purple-400"></span>
               <span>National & Global Scholarships</span>
             </div>
             <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight leading-tight">
@@ -108,11 +107,8 @@ export default function ScholarshipsPortal({ theme = 'dark' }) {
       {/* Scholarship Cards */}
       <div className="space-y-4">
         {filtered.map((item, idx) => (
-          <motion.div
+          <div
             key={item.id}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: Math.min(idx, 8) * 0.05, duration: 0.3, ease: 'easeOut' }}
             className={`rounded-3xl border p-6 space-y-4 card-3d ${cardBg}`}
           >
             <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
@@ -151,7 +147,7 @@ export default function ScholarshipsPortal({ theme = 'dark' }) {
               </button>
             </div>
 
-          </motion.div>
+          </div>
         ))}
       </div>
 

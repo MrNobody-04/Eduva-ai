@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
 import { 
   CheckCircle2, Clock, Plus, AlertCircle, FileText, 
   ExternalLink, Trash2, Calendar, ShieldCheck, ArrowRight, 
@@ -166,7 +165,7 @@ export default function ApplicationTracker({ theme, onOpenCopilot, prefillData }
   ]
 
   return (
-    <div className="space-y-8 animate-fadeIn">
+    <div className="space-y-8">
       {/* Header with clear purpose explanation */}
       <div className={`p-6 sm:p-8 rounded-3xl border shadow-xl relative overflow-hidden transition-all ${
         theme === 'dark'
@@ -365,11 +364,8 @@ export default function ApplicationTracker({ theme, onOpenCopilot, prefillData }
             {applications.map((app, idx) => {
               const currentStep = app.current_step || 1
               return (
-                <motion.div
+                <div
                   key={app.id}
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: Math.min(idx, 8) * 0.05, duration: 0.3, ease: 'easeOut' }}
                   className={`p-6 rounded-3xl border shadow-sm card-3d ${
                     theme === 'dark' ? 'bg-[#0E1424] border-slate-800' : 'bg-white border-slate-200'
                   }`}
@@ -486,7 +482,7 @@ export default function ApplicationTracker({ theme, onOpenCopilot, prefillData }
                       )}
                     </div>
                   </div>
-                </motion.div>
+                </div>
               )
             })}
           </div>
@@ -495,7 +491,7 @@ export default function ApplicationTracker({ theme, onOpenCopilot, prefillData }
 
       {/* New Application Modal */}
       {isNewModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
           <div className={`w-full max-w-lg rounded-3xl border shadow-2xl p-6 sm:p-7 space-y-4 ${
             theme === 'dark' ? 'bg-[#0E1424] border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900'
           }`}>

@@ -150,7 +150,7 @@ export default function AdminConsole({ theme, isDemoMode, toggleDemoMode }) {
   }
 
   return (
-    <div className="space-y-8 animate-fadeIn">
+    <div className="space-y-8">
       {/* Banner */}
       <div className={`p-6 sm:p-8 rounded-3xl border shadow-xl relative overflow-hidden transition-all ${
         theme === 'dark'
@@ -238,7 +238,7 @@ export default function AdminConsole({ theme, isDemoMode, toggleDemoMode }) {
 
       {/* Admin Key Modal */}
       {isKeyModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
           <div className={`max-w-md w-full rounded-3xl border shadow-2xl p-6 space-y-4 ${
             theme === 'dark' ? 'bg-[#0E1424] border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900'
           }`}>

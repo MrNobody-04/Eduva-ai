@@ -1,5 +1,4 @@
 import React, { useState } from 'react'
-import { motion } from 'framer-motion'
 import { 
   Building2, MapPin, Search, ExternalLink, GraduationCap, 
   Award, ShieldCheck, CheckCircle2, ChevronRight, X
@@ -26,7 +25,7 @@ export default function CollegesDirectory({ colleges = [], theme, onAddToTracker
   }
 
   return (
-    <div className="space-y-8 animate-fadeIn w-full max-w-full overflow-hidden pb-12">
+    <div className="space-y-8 w-full max-w-full overflow-hidden pb-12">
       {/* Banner */}
       <div className={`p-6 sm:p-8 rounded-3xl border shadow-depth-md relative overflow-hidden transition-all ${
         theme === 'dark' 
@@ -84,12 +83,8 @@ export default function CollegesDirectory({ colleges = [], theme, onAddToTracker
       {/* Colleges Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {filtered.map((college, idx) => (
-          <motion.div
+          <div
             key={college.id}
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: Math.min(idx, 8) * 0.04, duration: 0.32, ease: 'easeOut' }}
-            whileHover={{ y: -5 }}
             onClick={() => setSelectedCollege(college)}
             className={`p-5 sm:p-6 rounded-3xl border transition-all duration-300 card-3d cursor-pointer flex flex-col justify-between group ${
               theme === 'dark'
@@ -134,13 +129,13 @@ export default function CollegesDirectory({ colleges = [], theme, onAddToTracker
               <span>View Verified Details</span>
               <ChevronRight className="w-4 h-4" />
             </div>
-          </motion.div>
+          </div>
         ))}
       </div>
 
       {/* College Detail Modal */}
       {selectedCollege && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
           <div className={`max-w-3xl w-full rounded-3xl border shadow-2xl p-6 sm:p-8 space-y-6 max-h-[90vh] overflow-y-auto ${
             theme === 'dark' ? 'bg-gray-900 border-gray-800 text-white' : 'bg-white border-slate-200 text-slate-900'
           }`}>

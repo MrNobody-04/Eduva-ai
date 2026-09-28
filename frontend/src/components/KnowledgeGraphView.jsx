@@ -417,7 +417,7 @@ export default function KnowledgeGraphView({ knowledgeGraph: initialKG, theme = 
   }
 
   return (
-    <div className="space-y-6 animate-fadeIn">
+    <div className="space-y-6">
       {/* Top Header */}
       <div className="editorial-surface rounded-2xl p-6 relative overflow-hidden transition-all">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">

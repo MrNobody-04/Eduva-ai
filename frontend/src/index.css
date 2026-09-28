@@ -32,25 +32,22 @@ button, input, textarea, select { font: inherit; }
 .editorial-label { color: var(--primary); font-size: .72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .verified-badge { color: var(--verified); background: var(--verified-soft); border: 1px solid color-mix(in srgb, var(--verified) 26%, transparent); }
 .button-primary { background: var(--primary); color: white; box-shadow: 0 5px 15px rgba(79,70,229,.18); }
-.button-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
+.button-primary:hover { background: var(--primary-hover); }
 .button-secondary { background: var(--surface-1); border: 1px solid var(--border-subtle); color: var(--text-primary); }
 .button-secondary:hover { border-color: var(--primary); color: var(--primary); }
-.card-premium, .card-3d { border: 1px solid var(--border-subtle); transition: transform .22s ease, border-color .22s ease, box-shadow .22s ease; }
-.card-premium:hover, .card-3d:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--primary) 55%, var(--border-subtle)); box-shadow: var(--shadow-editorial); }
+.card-premium, .card-3d { border: 1px solid var(--border-subtle); }
 .glass-panel, .glass-panel-light { background: var(--surface-1); border: 1px solid var(--border-subtle); backdrop-filter: none; }
 .text-gradient-brand { background: none; -webkit-text-fill-color: initial; color: var(--primary); }
 .text-gradient-emerald { background: none; -webkit-text-fill-color: initial; color: var(--verified); }
 .font-digital { font-family: 'Plus Jakarta Sans', Inter, sans-serif; font-feature-settings: 'tnum'; letter-spacing: -.055em; }
 .digital-glow-blue { text-shadow: none; }
-.btn-interactive { transition: transform .2s ease, border-color .2s ease; }
-.btn-interactive:hover { transform: translateY(-1px); }
+.btn-interactive { }
 :focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
-@keyframes editorialReveal { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-.animate-fadeIn, .animate-slide-up, .animate-slide-drawer { animation: editorialReveal .45s cubic-bezier(.16,1,.3,1) both; }
+/* Motion is intentionally disabled: no slide, fade-in or pulse effects. */
+.animate-fadeIn, .animate-slide-up, .animate-slide-drawer, .animate-pulse, .animate-pulse-subtle, .animate-ping, .animate-bounce, .animate-slideUp, .animate-float, .animate-float-slow { animation: none !important; }
 @media (prefers-reduced-motion: reduce) { *, ::before, ::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
 
 /* App-wide editorial system: shared by every route, directory, dashboard and modal. */
-.app-view > * { animation: editorialReveal .42s cubic-bezier(.16,1,.3,1) both; }
 .app-view :is(h1, h2, h3) { color: var(--text-heading); letter-spacing: -.035em; }
 .app-view input, .app-view select, .app-view textarea { background: var(--input-bg) !important; border-color: var(--border-subtle) !important; color: var(--text-primary) !important; box-shadow: none !important; }
 .app-view input:focus, .app-view select:focus, .app-view textarea:focus { border-color: var(--primary) !important; box-shadow: 0 0 0 3px var(--primary-glow) !important; }
@@ -63,10 +60,7 @@ button, input, textarea, select { font: inherit; }
 .app-view [class*="shadow-xl"], .app-view [class*="shadow-2xl"], .app-view [class*="shadow-depth"] { box-shadow: var(--shadow-editorial) !important; }
 
 /* Elevation is reserved for actionable content; table/list data stays calm and readable. */
-.app-view button[class*="border"], .app-view a[class*="border"] { transition: transform .2s ease, border-color .2s ease, background-color .2s ease, color .2s ease, box-shadow .2s ease; }
-.app-view button[class*="border"]:hover, .app-view a[class*="border"]:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--primary) 55%, var(--border-subtle)); }
 .app-view [role="row"], .app-view tr { transition: background-color .18s ease; }
-.app-view tr:hover { background: color-mix(in srgb, var(--primary) 4%, transparent); }
 
 /* Semantic status language—teal confirms, amber asks attention, coral signals urgency. */
 .theme-light .app-view .text-emerald-400, .theme-light .app-view .text-emerald-500, .theme-light .app-view .text-emerald-600 { color: var(--verified) !important; }
@@ -80,7 +74,7 @@ button, input, textarea, select { font: inherit; }
 .theme-light .app-view [class*="bg-gradient"] { background-image: none !important; }
 
 /* The application is organised as a set of calm, consistent workspaces. */
-.workspace-intro { display: flex; gap: 1.25rem; align-items: flex-start; padding: 0 0 1.75rem; margin-bottom: 1.75rem; border-bottom: 1px solid var(--border-subtle); animation: editorialReveal .35s cubic-bezier(.16,1,.3,1) both; }
+.workspace-intro { display: flex; gap: 1.25rem; align-items: flex-start; padding: 0 0 1.75rem; margin-bottom: 1.75rem; border-bottom: 1px solid var(--border-subtle); }
 .workspace-intro > p { flex: 0 0 auto; margin-top: .38rem; color: var(--primary); font-size: .68rem; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; writing-mode: vertical-rl; transform: rotate(180deg); }
 .workspace-intro h1 { font-size: clamp(1.75rem, 3vw, 2.55rem); line-height: 1.05; font-weight: 800; letter-spacing: -.055em; margin: 0; color: var(--text-heading); }
 .workspace-intro span { display: block; max-width: 42rem; margin-top: .55rem; color: var(--text-secondary); font-size: .92rem; line-height: 1.6; }

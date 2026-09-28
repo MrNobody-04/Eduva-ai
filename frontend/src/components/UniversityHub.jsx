@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
 import { 
   Building2, MapPin, Globe, Award, BookOpen, Search, 
   ExternalLink, CheckCircle2, ChevronRight, ShieldCheck, Phone, Mail, Users, GraduationCap, Bot, Sparkles
@@ -70,7 +69,7 @@ export default function UniversityHub({ theme, onOpenCopilot, onAddToTracker }) 
   }
 
   return (
-    <div className="space-y-8 animate-fadeIn w-full max-w-full overflow-hidden pb-12">
+    <div className="space-y-8 w-full max-w-full overflow-hidden pb-12">
       {/* Hero Header */}
       <div className="editorial-surface p-6 sm:p-9 rounded-xl relative overflow-hidden transition-all">
         <div className="max-w-3xl space-y-4">
@@ -267,11 +266,8 @@ export default function UniversityHub({ theme, onOpenCopilot, onAddToTracker }) 
         {filteredUniversities.map((univ, idx) => {
           const affilCount = getAffiliatedColleges(univ).length
           return (
-            <motion.div
+            <div
               key={univ.id}
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: Math.min(idx, 9) * 0.04, duration: 0.32, ease: 'easeOut' }}
               onClick={() => { setSelectedUniv(univ); setActiveDetailTab('overview'); }}
               className={`p-5 sm:p-6 rounded-3xl border transition-colors duration-300 card-3d cursor-pointer flex flex-col justify-between group ${
                 theme === 'dark'
@@ -328,17 +324,17 @@ export default function UniversityHub({ theme, onOpenCopilot, onAddToTracker }) 
 
               <div className="mt-4 pt-3 border-t border-gray-800/40 flex items-center justify-between text-xs font-black text-blue-600 dark:text-blue-400">
                 <span>Explore Affiliated Colleges & Details</span>
-                <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                <ChevronRight className="w-4 h-4 transition-transform" />
               </div>
-            </motion.div>
+            </div>
           )
         })}
       </div>
 
       {/* University Detail Modal */}
       {selectedUniv && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
-          <div className={`max-w-4xl w-full rounded-3xl border shadow-2xl p-6 sm:p-8 space-y-6 max-h-[90vh] overflow-y-auto animate-slide-up ${
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <div className={`max-w-4xl w-full rounded-3xl border shadow-2xl p-6 sm:p-8 space-y-6 max-h-[90vh] overflow-y-auto ${
             theme === 'dark' ? 'bg-[#0E1424] border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900'
           }`}>
             {/* Header */}
@@ -390,7 +386,7 @@ export default function UniversityHub({ theme, onOpenCopilot, onAddToTracker }) 
                     return (
                       <div className="p-8 text-center rounded-2xl border border-dashed border-amber-500/40 bg-amber-500/5 space-y-3">
                         <div className="w-10 h-10 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center mx-auto">
-                          <Activity className="w-5 h-5 animate-pulse" />
+                          <Activity className="w-5 h-5" />
                         </div>
                         <h4 className="text-xs font-black uppercase text-amber-400">
                           Active Indexing Progress: 0 of {totalExpected ? `${totalExpected}` : 'estimated 25+'} Campuses Corroborated
@@ -399,7 +395,7 @@ export default function UniversityHub({ theme, onOpenCopilot, onAddToTracker }) 
                           EDUVA's ResearchAgent crawls {selectedUniv.name}'s official gazettes and accreditation records before marking any campus verified.
                         </p>
                         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800 text-[11px] text-slate-400 font-mono">
-                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span>
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
                           <span>Crawler status: Scanning university gazette notice board</span>
                         </div>
                       </div>

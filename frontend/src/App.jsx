@@ -19,7 +19,6 @@ import ConversationalCopilot from './components/ConversationalCopilot'
 import ProfileModal from './components/ProfileModal'
 import MobileBottomNav from './components/MobileBottomNav'
 import AdminConsole from './components/AdminConsole'
-import { motion, AnimatePresence } from 'framer-motion'
 import { Bot, Heart, Search, X, BookOpen, Building2, GraduationCap, ArrowRight, Bell, AlertTriangle, Lock, ShieldAlert } from 'lucide-react'
 
 const PAGE_CONTEXT = {
@@ -292,15 +291,7 @@ export default function App() {
           </section>
         )}
         
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.22, ease: "easeOut" }}
-            className="w-full"
-          >
+        <div key={activeTab} className="w-full">
             {activeTab === 'landing' && (
               <LandingPage
                 onExplore={() => setActiveTab('universities')}
@@ -448,8 +439,7 @@ export default function App() {
                 </div>
               )
             )}
-          </motion.div>
-        </AnimatePresence>
+          </div>
 
       </main>
 
@@ -464,7 +454,7 @@ export default function App() {
 
       {/* Global Universal Search Modal (Ctrl+K) */}
       {isSearchOpen && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 p-4 bg-black/80 backdrop-blur-md">
           <div className={`max-w-2xl w-full rounded-3xl border shadow-2xl p-6 space-y-4 ${
             theme === 'dark' ? 'bg-[#0E1424] border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900'
           }`}>
@@ -492,7 +482,7 @@ export default function App() {
             </div>
 
             {isSearching && (
-              <div className="py-8 text-center text-xs opacity-60 animate-pulse">
+              <div className="py-8 text-center text-xs opacity-60">
                 EDUVA is searching verified Nepal education knowledge...
               </div>
             )}
@@ -563,7 +553,7 @@ export default function App() {
 
                 {/* Honest No-Match State with Real Research Dispatch */}
                 {searchResults.total_matches === 0 && searchResults.research_suggestion && (
-                  <div className="p-4 rounded-2xl border border-amber-500/30 bg-amber-500/5 space-y-3 animate-fadeIn">
+                  <div className="p-4 rounded-2xl border border-amber-500/30 bg-amber-500/5 space-y-3">
                     <div className="flex items-start gap-3">
                       <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
                         <BookOpen className="w-4 h-4" />
@@ -631,7 +621,7 @@ export default function App() {
           }`}>
             <div className="flex items-start gap-3">
               <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-500 to-indigo-600 text-white flex items-center justify-center shrink-0 shadow-md">
-                <Bell className="w-4 h-4 animate-bounce" />
+                <Bell className="w-4 h-4" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
@@ -669,13 +659,13 @@ export default function App() {
       <div className="fixed bottom-20 lg:bottom-6 right-6 z-40">
         <button
           onClick={() => setIsCopilotOpen(true)}
-          className="group flex items-center space-x-2.5 px-5 py-3.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white rounded-full shadow-2xl shadow-blue-600/40 hover:scale-105 transition-all cursor-pointer border border-white/20"
+          className="group flex items-center space-x-2.5 px-5 py-3.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white rounded-full shadow-2xl shadow-blue-600/40 transition-all cursor-pointer border border-white/20"
         >
           <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center">
-            <Bot className="w-4 h-4 text-white animate-pulse" />
+            <Bot className="w-4 h-4 text-white" />
           </div>
           <span className="text-xs font-black tracking-wide hidden sm:inline">Ask EDUVA AI</span>
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+          <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
         </button>
       </div>
 

@@ -281,7 +281,7 @@ export default function ProfileModal({ isOpen, onClose, theme }) {
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <div className={`w-full max-w-lg rounded-2xl border shadow-[var(--shadow-editorial)] p-6 sm:p-8 space-y-6 max-h-[92vh] overflow-y-auto transition-all ${
         theme === 'dark' 
           ? 'bg-[#2A313C] border-[#3D4654] text-[#EEEEEE]' 
@@ -349,13 +349,13 @@ export default function ProfileModal({ isOpen, onClose, theme }) {
 
         {/* Alert Notifications */}
         {errorMsg && (
-          <div className="p-3.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-xs font-semibold animate-fadeIn flex items-center gap-2">
+          <div className="p-3.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-xs font-semibold flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{errorMsg}</span>
           </div>
         )}
         {successMsg && (
-          <div className="p-3.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-400 text-xs font-semibold animate-fadeIn flex items-center gap-2">
+          <div className="p-3.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-400 text-xs font-semibold flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 shrink-0" />
             <span>{successMsg}</span>
           </div>
@@ -538,7 +538,7 @@ export default function ProfileModal({ isOpen, onClose, theme }) {
 
         {/* 3. CHECK YOUR EMAIL VERIFICATION SCREEN */}
         {!currentUser && authMode === 'verify_email' && (
-          <div className="space-y-5 text-center py-2 animate-fadeIn">
+          <div className="space-y-5 text-center py-2">
             <div className="w-16 h-16 rounded-full bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center mx-auto text-indigo-500">
               <Mail className="w-8 h-8" />
             </div>
